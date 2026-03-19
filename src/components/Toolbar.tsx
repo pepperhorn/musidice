@@ -6,27 +6,45 @@ export function Toolbar() {
   const accidentalMode = useDiceStore((s) => s.accidentalMode);
   const setAccidentalMode = useDiceStore((s) => s.setAccidentalMode);
   const rollingPhase = useDiceStore((s) => s.rollingPhase);
+  const results = useDiceStore((s) => s.results);
+  const shuffling = useDiceStore((s) => s.shuffling);
+  const setShuffling = useDiceStore((s) => s.setShuffling);
+  const shuffleResults = useDiceStore((s) => s.shuffleResults);
   const isRolling = rollingPhase !== 'idle';
+  const hasResults = results.length > 0 && results.every((r) => r.die1.landed && r.die2.landed);
+
+  const handleShuffle = () => {
+    if (!hasResults || isRolling || shuffling) return;
+    setShuffling(true);
+    // Swap data at the midpoint of the animation
+    setTimeout(() => {
+      shuffleResults();
+    }, 250);
+    setTimeout(() => {
+      setShuffling(false);
+    }, 500);
+  };
 
   return (
     <div className="fixed bottom-0 left-0 right-0 bg-gray-800/90 backdrop-blur-sm border-t border-gray-700 px-4 py-3 flex items-center justify-center gap-6 font-[Poppins] z-40">
-      {/* Pair count */}
+      {/* Pair count +/- */}
       <div className="flex items-center gap-2">
         <span className="text-gray-400 text-sm mr-1">Pairs:</span>
-        {[1, 2, 3, 4].map((n) => (
-          <button
-            key={n}
-            onClick={() => setPairCount(n)}
-            disabled={isRolling}
-            className={`w-8 h-8 rounded-full text-sm font-semibold transition-all cursor-pointer disabled:cursor-not-allowed ${
-              pairCount === n
-                ? 'bg-emerald-500 text-white'
-                : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-            }`}
-          >
-            {n}
-          </button>
-        ))}
+        <button
+          onClick={() => setPairCount(Math.max(1, pairCount - 1))}
+          disabled={isRolling || pairCount <= 1}
+          className="w-8 h-8 rounded-full text-sm font-semibold transition-all cursor-pointer disabled:cursor-not-allowed disabled:opacity-40 bg-gray-700 text-gray-300 hover:bg-gray-600"
+        >
+          &minus;
+        </button>
+        <span className="text-white text-sm font-semibold w-6 text-center">{pairCount}</span>
+        <button
+          onClick={() => setPairCount(pairCount + 1)}
+          disabled={isRolling}
+          className="w-8 h-8 rounded-full text-sm font-semibold transition-all cursor-pointer disabled:cursor-not-allowed disabled:opacity-40 bg-gray-700 text-gray-300 hover:bg-gray-600"
+        >
+          +
+        </button>
       </div>
 
       {/* Separator */}
@@ -57,6 +75,18 @@ export function Toolbar() {
           &#9839;
         </button>
       </div>
+
+      {/* Separator */}
+      <div className="w-px h-6 bg-gray-600" />
+
+      {/* Shuffle */}
+      <button
+        onClick={handleShuffle}
+        disabled={!hasResults || isRolling || shuffling}
+        className="px-4 py-1.5 rounded-full text-sm font-semibold transition-all cursor-pointer disabled:cursor-not-allowed disabled:opacity-30 bg-gray-700 text-gray-300 hover:bg-gray-600 hover:text-white"
+      >
+        Shuffle
+      </button>
     </div>
   );
 }

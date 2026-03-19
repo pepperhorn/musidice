@@ -34,3 +34,14 @@ body {
 .animate-land {
   animation: dice-land 0.4s ease-out forwards;
 }
+
+@keyframes dice-scatter {
+  0% { transform: scale(1) rotate(0deg); opacity: 1; }
+  40% { transform: scale(0.6) rotate(15deg); opacity: 0.4; }
+  60% { transform: scale(0.6) rotate(-10deg); opacity: 0.4; }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+
+.animate-shuffle {
+  animation: dice-scatter 0.5s ease-in-out;
+}
