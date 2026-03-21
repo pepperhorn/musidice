@@ -98,23 +98,29 @@ export function Die({ note, landed, rollingPhase }: DieProps) {
 
   // Pick random top/side colors and rotation when landing
   const baseRotationRef = useRef(Math.floor(Math.random() * 4) * 90 + (Math.random() * 20 - 10));
-
-  // Settle wiggle after landing
+  // Random roll parameters: distance from left and spin
+  const rollDistRef = useRef(`${250 + Math.random() * 200}px`);
+  const rollSpinRef = useRef(`${-540 - Math.random() * 360}deg`);
+  const settleRockRef = useRef(`${4 + Math.random() * 6}deg`);
+  const settleDurationRef = useRef(`${0.4 + Math.random() * 0.3}s`);
   const [settling, setSettling] = useState(false);
 
   useEffect(() => {
     if (isLanding && note) {
       const faceColor = CRF_COLORS[note];
       baseRotationRef.current = Math.floor(Math.random() * 4) * 90 + (Math.random() * 20 - 10);
+      rollDistRef.current = `${250 + Math.random() * 200}px`;
+      rollSpinRef.current = `${-540 - Math.random() * 360}deg`;
+      settleRockRef.current = `${4 + Math.random() * 6}deg`;
+      settleDurationRef.current = `${0.4 + Math.random() * 0.3}s`;
       colorsRef.current = {
         top: randomColor(faceColor),
         side: darken(randomColor(faceColor)),
       };
-      // Trigger settle wiggle after landing animation completes (500ms)
       const t = setTimeout(() => {
         setSettling(true);
-        setTimeout(() => setSettling(false), 400);
-      }, 500);
+        setTimeout(() => setSettling(false), 700);
+      }, 800);
       return () => clearTimeout(t);
     }
   }, [isLanding, note]);
@@ -136,28 +142,32 @@ export function Die({ note, landed, rollingPhase }: DieProps) {
   const isBlack = note ? BLACK_KEYS.has(note) : false;
   const rotation = baseRotationRef.current;
 
-  // Build animation classes
-  const animClasses = [
-    isShaking ? shakeVariantRef.current : '',
-    isLanding ? 'animate-land' : '',
-    settling ? 'animate-settle' : '',
-  ].filter(Boolean).join(' ');
+  const animClasses = isShaking
+    ? shakeVariantRef.current
+    : isLanding
+      ? 'animate-land'
+      : '';
 
   return (
-    // Outer wrapper: rotation only (won't be overridden by animations)
+    // Outer wrapper: base rotation + settle rock (separate from inner roll animation)
     <div
-      className="w-28 h-28 sm:w-32 sm:h-32"
+      className={`w-28 h-28 sm:w-32 sm:h-32 ${settling ? 'animate-settle' : ''}`}
       style={{
         transform: `rotate(${rotation}deg)`,
         filter: showNote ? `drop-shadow(0 0 8px ${color}40)` : undefined,
-      }}
+        '--settle-base': `${rotation}deg`,
+        '--settle-rock': settleRockRef.current,
+        '--settle-duration': settleDurationRef.current,
+      } as React.CSSProperties}
     >
       {/* Inner: animations (shake/land/settle own the transform here) */}
       <div
         className={`relative w-full h-full ${animClasses}`}
         style={{
           animationDelay: isShaking ? shakeDelayRef.current : undefined,
-        }}
+          '--roll-dist': rollDistRef.current,
+          '--roll-spin': rollSpinRef.current,
+        } as React.CSSProperties}
       >
         {/* Dice SVG */}
         {showNote && landedSvgUrl ? (
@@ -186,23 +196,23 @@ export function Die({ note, landed, rollingPhase }: DieProps) {
             style={{
               left: '55.74%',
               top: '57.05%',
-              transform: `translate(-50%, -50%) rotate(${-rotation}deg)`,
+              transform: 'translate(-50%, -50%)',
               lineHeight: 1,
               textAlign: 'center',
-              color: showNote
-                ? (isBlack ? '#fff' : '#1a1a2e')
-                : 'rgba(255,255,255,0.5)',
+              color: 'transparent',
+              WebkitBackgroundClip: 'text',
+              backgroundClip: 'text',
+              backgroundColor: showNote
+                ? (isBlack ? '#fff' : color)
+                : '#888',
               fontSize: showNote
                 ? (label.length > 2 ? '2.2rem' : '2.8rem')
                 : '2.8rem',
               textShadow: showNote
                 ? (isBlack
-                    ? '0 -1px 1px rgba(255,255,255,0.15), 0 2px 3px rgba(0,0,0,0.5)'
-                    : '0 -1px 1px rgba(255,255,255,0.4), 0 2px 3px rgba(0,0,0,0.35)')
-                : '0 2px 3px rgba(0,0,0,0.3)',
-              WebkitTextStroke: showNote
-                ? (isBlack ? '0.5px rgba(0,0,0,0.2)' : '0.5px rgba(0,0,0,0.15)')
-                : '0.5px rgba(255,255,255,0.1)',
+                    ? '2px 2px 3px rgba(255,255,255,0.85), 0 0 0 rgba(0,0,0,0.6)'
+                    : '2px 2px 3px rgba(255,255,255,0.2), 0 0 0 rgba(0,0,0,0.6)')
+                : '2px 2px 3px rgba(255,255,255,0.85), 0 0 0 rgba(0,0,0,0.4)',
             }}
           >
             {showNote ? label : '?'}

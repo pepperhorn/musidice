@@ -53,32 +53,46 @@ body {
   animation: dice-shake-3 0.45s ease-in-out infinite;
 }
 
-/* --- Landing: drop + bounce --- */
-@keyframes dice-land {
-  0% { transform: translateY(-30px) scale(1.15); opacity: 0.6; }
-  35% { transform: translateY(5px) scale(0.95); opacity: 1; }
-  55% { transform: translateY(-10px) scale(1.04); }
-  70% { transform: translateY(3px) scale(0.98); }
-  85% { transform: translateY(-2px) scale(1.01); }
-  100% { transform: translateY(0) scale(1); opacity: 1; }
+/* --- Landing: roll in from the left with tumble + bounce --- */
+@keyframes dice-roll-land {
+  0% {
+    transform: translateX(calc(-1 * var(--roll-dist, 300px))) rotate(var(--roll-spin, -720deg)) scale(0.6);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  50% {
+    transform: translateX(15px) rotate(calc(var(--roll-spin, -720deg) * -0.05)) scale(1.04);
+  }
+  65% {
+    transform: translateX(-8px) rotate(calc(var(--roll-spin, -720deg) * 0.02)) scale(0.98);
+  }
+  80% {
+    transform: translateX(3px) rotate(0deg) scale(1.01);
+  }
+  100% {
+    transform: translateX(0) rotate(0deg) scale(1);
+    opacity: 1;
+  }
 }
 
 .animate-land {
-  animation: dice-land 0.5s ease-out forwards;
+  animation: dice-roll-land 0.8s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
 }
 
-/* --- Settle wiggle: brief wobble after landing --- */
+/* --- Settle rock: decaying left-right rock after landing --- */
 @keyframes dice-settle {
-  0% { transform: rotate(0deg); }
-  20% { transform: rotate(3deg); }
-  40% { transform: rotate(-2.5deg); }
-  60% { transform: rotate(1.5deg); }
-  80% { transform: rotate(-0.5deg); }
-  100% { transform: rotate(0deg); }
+  0% { transform: rotate(var(--settle-base)) translateX(0); }
+  15% { transform: rotate(calc(var(--settle-base) + var(--settle-rock))) translateX(3px); }
+  35% { transform: rotate(calc(var(--settle-base) - var(--settle-rock) * 0.7)) translateX(-2px); }
+  55% { transform: rotate(calc(var(--settle-base) + var(--settle-rock) * 0.35)) translateX(1px); }
+  75% { transform: rotate(calc(var(--settle-base) - var(--settle-rock) * 0.1)) translateX(0); }
+  100% { transform: rotate(var(--settle-base)) translateX(0); }
 }
 
 .animate-settle {
-  animation: dice-settle 0.4s ease-out forwards;
+  animation: dice-settle var(--settle-duration, 0.5s) ease-out forwards;
 }
 
 /* --- Shuffle scatter --- */
