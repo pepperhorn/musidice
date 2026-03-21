@@ -5,36 +5,83 @@ body {
   margin: 0;
 }
 
-@keyframes dice-shake {
+/* --- Dice shake: 3 variants with different wobble patterns --- */
+@keyframes dice-shake-1 {
   0% { transform: translate(0, 0) rotate(0deg); }
-  10% { transform: translate(-8px, -6px) rotate(-8deg); }
-  20% { transform: translate(6px, -4px) rotate(6deg); }
-  30% { transform: translate(-6px, 4px) rotate(-5deg); }
-  40% { transform: translate(8px, 6px) rotate(7deg); }
-  50% { transform: translate(-4px, -8px) rotate(-6deg); }
-  60% { transform: translate(6px, 4px) rotate(8deg); }
-  70% { transform: translate(-8px, -2px) rotate(-4deg); }
-  80% { transform: translate(4px, 6px) rotate(5deg); }
-  90% { transform: translate(-2px, -4px) rotate(-3deg); }
+  10% { transform: translate(-8px, -6px) rotate(-12deg); }
+  20% { transform: translate(6px, -4px) rotate(8deg); }
+  30% { transform: translate(-6px, 4px) rotate(-6deg); }
+  40% { transform: translate(8px, 6px) rotate(10deg); }
+  50% { transform: translate(-4px, -8px) rotate(-8deg); }
+  60% { transform: translate(6px, 4px) rotate(12deg); }
+  70% { transform: translate(-8px, -2px) rotate(-5deg); }
+  80% { transform: translate(4px, 6px) rotate(7deg); }
+  90% { transform: translate(-2px, -4px) rotate(-4deg); }
   100% { transform: translate(0, 0) rotate(0deg); }
 }
 
+@keyframes dice-shake-2 {
+  0% { transform: translate(0, 0) rotate(0deg); }
+  12% { transform: translate(7px, -5px) rotate(10deg); }
+  25% { transform: translate(-5px, 7px) rotate(-9deg); }
+  37% { transform: translate(9px, -3px) rotate(7deg); }
+  50% { transform: translate(-7px, -6px) rotate(-11deg); }
+  62% { transform: translate(4px, 8px) rotate(6deg); }
+  75% { transform: translate(-8px, 3px) rotate(-8deg); }
+  87% { transform: translate(6px, -7px) rotate(9deg); }
+  100% { transform: translate(0, 0) rotate(0deg); }
+}
+
+@keyframes dice-shake-3 {
+  0% { transform: translate(0, 0) rotate(0deg); }
+  15% { transform: translate(-6px, 8px) rotate(-7deg); }
+  30% { transform: translate(8px, -3px) rotate(11deg); }
+  45% { transform: translate(-4px, -7px) rotate(-10deg); }
+  60% { transform: translate(7px, 5px) rotate(5deg); }
+  75% { transform: translate(-9px, -4px) rotate(-8deg); }
+  90% { transform: translate(3px, 6px) rotate(6deg); }
+  100% { transform: translate(0, 0) rotate(0deg); }
+}
+
+.animate-shake-1 {
+  animation: dice-shake-1 0.4s ease-in-out infinite;
+}
+.animate-shake-2 {
+  animation: dice-shake-2 0.35s ease-in-out infinite;
+}
+.animate-shake-3 {
+  animation: dice-shake-3 0.45s ease-in-out infinite;
+}
+
+/* --- Landing: drop + bounce --- */
 @keyframes dice-land {
-  0% { transform: translateY(-30px) scale(1.1); opacity: 0.7; }
-  40% { transform: translateY(4px) scale(0.97); opacity: 1; }
-  60% { transform: translateY(-8px) scale(1.03); }
-  80% { transform: translateY(2px) scale(0.99); }
+  0% { transform: translateY(-30px) scale(1.15); opacity: 0.6; }
+  35% { transform: translateY(5px) scale(0.95); opacity: 1; }
+  55% { transform: translateY(-10px) scale(1.04); }
+  70% { transform: translateY(3px) scale(0.98); }
+  85% { transform: translateY(-2px) scale(1.01); }
   100% { transform: translateY(0) scale(1); opacity: 1; }
 }
 
-.animate-shake {
-  animation: dice-shake 0.15s linear infinite;
-}
-
 .animate-land {
-  animation: dice-land 0.4s ease-out forwards;
+  animation: dice-land 0.5s ease-out forwards;
 }
 
+/* --- Settle wiggle: brief wobble after landing --- */
+@keyframes dice-settle {
+  0% { transform: rotate(0deg); }
+  20% { transform: rotate(3deg); }
+  40% { transform: rotate(-2.5deg); }
+  60% { transform: rotate(1.5deg); }
+  80% { transform: rotate(-0.5deg); }
+  100% { transform: rotate(0deg); }
+}
+
+.animate-settle {
+  animation: dice-settle 0.4s ease-out forwards;
+}
+
+/* --- Shuffle scatter --- */
 @keyframes dice-scatter {
   0% { transform: scale(1) rotate(0deg); opacity: 1; }
   40% { transform: scale(0.6) rotate(15deg); opacity: 0.4; }
@@ -44,4 +91,14 @@ body {
 
 .animate-shuffle {
   animation: dice-scatter 0.5s ease-in-out;
+}
+
+/* --- Go button pulse while rolling --- */
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 8px rgba(16, 185, 129, 0.4); }
+  50% { box-shadow: 0 0 20px rgba(16, 185, 129, 0.7); }
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 1s ease-in-out infinite;
 }

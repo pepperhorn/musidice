@@ -36,14 +36,14 @@ export function useRollAnimation() {
       currentPairIndex: 0,
     });
 
-    // Shake phase
-    await delay(800);
+    // Shake phase — randomize duration slightly
+    await delay(700 + Math.random() * 300);
 
-    // Sequential landing for each pair
+    // Sequential landing for each pair with randomized gaps
     for (let i = 0; i < count; i++) {
       useDiceStore.setState({ currentPairIndex: i });
 
-      if (i > 0) await delay(400);
+      if (i > 0) await delay(300 + Math.random() * 200);
 
       // Land die 1
       useDiceStore.setState((state) => {
@@ -55,7 +55,9 @@ export function useRollAnimation() {
         return { results, rollingPhase: 'landing' };
       });
       playNote(allResults[i].die1.note);
-      await delay(600);
+
+      // Random gap before die 2 lands (feels like real dice)
+      await delay(400 + Math.random() * 400);
 
       // Land die 2
       useDiceStore.setState((state) => {
@@ -67,7 +69,7 @@ export function useRollAnimation() {
         return { results };
       });
       playNote(allResults[i].die2.note);
-      await delay(400);
+      await delay(300 + Math.random() * 200);
     }
 
     useDiceStore.setState({ rollingPhase: 'idle' });

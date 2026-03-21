@@ -11,7 +11,7 @@ export function DiceArea() {
   const { roll, isRolling } = useRollAnimation();
 
   return (
-    <div className="flex-1 flex flex-col items-center justify-center gap-6">
+    <div className="flex-1 flex flex-col items-center justify-center gap-6 pb-16">
       <div className={`flex flex-wrap items-center justify-center gap-8 ${shuffling ? 'animate-shuffle' : ''}`}>
         {Array.from({ length: pairCount }, (_, i) => (
           <DicePair

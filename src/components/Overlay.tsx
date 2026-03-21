@@ -10,7 +10,7 @@ export function Overlay() {
   };
 
   return (
-    <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-gray-900">
+    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-gray-900/70 backdrop-blur-sm">
       <h1 className="text-5xl font-bold text-white mb-2 font-[Poppins]">Musidice</h1>
       <p className="text-gray-400 mb-8 font-[Poppins]">A musical dice game</p>
       <button
