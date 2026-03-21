@@ -40,7 +40,8 @@ const SHARP_LABELS: Partial<Record<NoteName, string>> = {
   'Bb': 'A#',
 };
 
-export function noteLabel(name: NoteName, mode: 'flat' | 'sharp'): string {
+export function noteLabel(name: NoteName, mode: 'flat' | 'sharp' | 'natural'): string {
+  if (mode === 'natural') return name.split('/')[0].replace('#', '');
   return (mode === 'flat' ? FLAT_LABELS : SHARP_LABELS)[name] ?? name;
 }
 

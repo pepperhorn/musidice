@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Knewave&family=Poppins:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
 
 body {
@@ -53,47 +53,6 @@ body {
   animation: dice-shake-3 0.45s ease-in-out infinite;
 }
 
-/* --- Landing: roll in from the left with tumble + bounce --- */
-@keyframes dice-roll-land {
-  0% {
-    transform: translateX(calc(-1 * var(--roll-dist, 300px))) rotate(var(--roll-spin, -720deg)) scale(0.6);
-    opacity: 0;
-  }
-  10% {
-    opacity: 1;
-  }
-  50% {
-    transform: translateX(15px) rotate(calc(var(--roll-spin, -720deg) * -0.05)) scale(1.04);
-  }
-  65% {
-    transform: translateX(-8px) rotate(calc(var(--roll-spin, -720deg) * 0.02)) scale(0.98);
-  }
-  80% {
-    transform: translateX(3px) rotate(0deg) scale(1.01);
-  }
-  100% {
-    transform: translateX(0) rotate(0deg) scale(1);
-    opacity: 1;
-  }
-}
-
-.animate-land {
-  animation: dice-roll-land 0.8s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
-}
-
-/* --- Settle rock: decaying left-right rock after landing --- */
-@keyframes dice-settle {
-  0% { transform: rotate(var(--settle-base)) translateX(0); }
-  15% { transform: rotate(calc(var(--settle-base) + var(--settle-rock))) translateX(3px); }
-  35% { transform: rotate(calc(var(--settle-base) - var(--settle-rock) * 0.7)) translateX(-2px); }
-  55% { transform: rotate(calc(var(--settle-base) + var(--settle-rock) * 0.35)) translateX(1px); }
-  75% { transform: rotate(calc(var(--settle-base) - var(--settle-rock) * 0.1)) translateX(0); }
-  100% { transform: rotate(var(--settle-base)) translateX(0); }
-}
-
-.animate-settle {
-  animation: dice-settle var(--settle-duration, 0.5s) ease-out forwards;
-}
 
 /* --- Shuffle scatter --- */
 @keyframes dice-scatter {

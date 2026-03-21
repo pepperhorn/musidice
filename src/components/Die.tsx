@@ -2,6 +2,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { CRF_COLORS, noteLabel, BLACK_KEYS } from '../constants/music';
 import { useDiceStore } from '../state/store';
 import type { NoteName, RollingPhase } from '../types';
+import { useDiePhysics } from '../hooks/useDiePhysics';
+import { playNote } from '../audio/engine';
 import blankDiceSvg from '../assets/blankdice.svg';
 import diceV4Svg from '../assets/dice_v4.svg';
 import diceDoneSvgUrl from '../assets/dicewithcenter.svg';
@@ -10,7 +12,7 @@ const SHAKE_FRAMES = [blankDiceSvg, diceV4Svg];
 const ALL_COLORS = Object.values(CRF_COLORS);
 const SHAKE_VARIANTS = ['animate-shake-1', 'animate-shake-2', 'animate-shake-3'];
 
-// Global cache for the dicedone SVG text
+// Global cache for the landed SVG text
 let svgTextCache: string | null = null;
 let svgTextPromise: Promise<string> | null = null;
 
@@ -44,51 +46,58 @@ interface DieProps {
   note: NoteName | null;
   landed: boolean;
   rollingPhase: RollingPhase;
+  dieIndex: number;
 }
 
-export function Die({ note, landed, rollingPhase }: DieProps) {
+export function Die({ note, landed, rollingPhase, dieIndex }: DieProps) {
   const accidentalMode = useDiceStore((s) => s.accidentalMode);
 
   const isShaking = rollingPhase === 'shaking' && !landed;
-  const isLanding = landed;
   const showNote = landed && note;
   const isIdle = rollingPhase === 'idle' && !landed;
 
-  // Each die gets a random shake variant + animation delay for desync
+  // Physics-driven landing animation — play note when die settles
+  const handleSettle = useRef(() => {
+    if (note) playNote(note);
+  });
+  handleSettle.current = () => { if (note) playNote(note); };
+  const { containerRef, phase: physicsPhase, frameIndex: physicsFrameIndex } = useDiePhysics(landed, dieIndex, () => handleSettle.current());
+  const isFlying = physicsPhase === 'flying';
+  const hasSettled = physicsPhase === 'done';
+
+  // Shake variant + delay for desync
   const shakeVariantRef = useRef(SHAKE_VARIANTS[Math.floor(Math.random() * SHAKE_VARIANTS.length)]);
   const shakeDelayRef = useRef(`${Math.floor(Math.random() * 200)}ms`);
 
-  // Shake frame + color cycling
-  const [frameIndex, setFrameIndex] = useState(0);
+  // Shake color cycling
   const [colorIndex, setColorIndex] = useState(0);
+  const [shakeFrameIndex, setShakeFrameIndex] = useState(0);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     if (isShaking) {
-      // Pick new shake variant each roll
       shakeVariantRef.current = SHAKE_VARIANTS[Math.floor(Math.random() * SHAKE_VARIANTS.length)];
       shakeDelayRef.current = `${Math.floor(Math.random() * 200)}ms`;
-      // Stagger color start per die instance
       const offset = Math.floor(Math.random() * ALL_COLORS.length);
       setColorIndex(offset);
-      // Randomize interval slightly per die (180-240ms)
       const interval = 180 + Math.floor(Math.random() * 60);
       intervalRef.current = setInterval(() => {
-        setFrameIndex((i) => (i + 1) % SHAKE_FRAMES.length);
+        setShakeFrameIndex((i) => (i + 1) % SHAKE_FRAMES.length);
         setColorIndex((i) => (i + 1) % ALL_COLORS.length);
       }, interval);
     } else {
       if (intervalRef.current) clearInterval(intervalRef.current);
-      setFrameIndex(0);
+      setShakeFrameIndex(0);
     }
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
   }, [isShaking]);
 
-  // Landed die: colored SVG + rotation
+  // Landed SVG colorization
   const [svgText, setSvgText] = useState<string | null>(svgTextCache);
   const colorsRef = useRef<{ top: string; side: string } | null>(null);
+  const baseRotationRef = useRef(Math.floor(Math.random() * 4) * 90 + (Math.random() * 20 - 10));
 
   useEffect(() => {
     if (!svgText) {
@@ -96,34 +105,16 @@ export function Die({ note, landed, rollingPhase }: DieProps) {
     }
   }, [svgText]);
 
-  // Pick random top/side colors and rotation when landing
-  const baseRotationRef = useRef(Math.floor(Math.random() * 4) * 90 + (Math.random() * 20 - 10));
-  // Random roll parameters: distance from left and spin
-  const rollDistRef = useRef(`${250 + Math.random() * 200}px`);
-  const rollSpinRef = useRef(`${-540 - Math.random() * 360}deg`);
-  const settleRockRef = useRef(`${4 + Math.random() * 6}deg`);
-  const settleDurationRef = useRef(`${0.4 + Math.random() * 0.3}s`);
-  const [settling, setSettling] = useState(false);
-
   useEffect(() => {
-    if (isLanding && note) {
+    if (landed && note) {
       const faceColor = CRF_COLORS[note];
       baseRotationRef.current = Math.floor(Math.random() * 4) * 90 + (Math.random() * 20 - 10);
-      rollDistRef.current = `${250 + Math.random() * 200}px`;
-      rollSpinRef.current = `${-540 - Math.random() * 360}deg`;
-      settleRockRef.current = `${4 + Math.random() * 6}deg`;
-      settleDurationRef.current = `${0.4 + Math.random() * 0.3}s`;
       colorsRef.current = {
         top: randomColor(faceColor),
         side: darken(randomColor(faceColor)),
       };
-      const t = setTimeout(() => {
-        setSettling(true);
-        setTimeout(() => setSettling(false), 700);
-      }, 800);
-      return () => clearTimeout(t);
     }
-  }, [isLanding, note]);
+  }, [landed, note]);
 
   const landedSvgUrl = useMemo(() => {
     if (!svgText || !showNote || !note || !colorsRef.current) return null;
@@ -142,82 +133,83 @@ export function Die({ note, landed, rollingPhase }: DieProps) {
   const isBlack = note ? BLACK_KEYS.has(note) : false;
   const rotation = baseRotationRef.current;
 
-  const animClasses = isShaking
-    ? shakeVariantRef.current
-    : isLanding
-      ? 'animate-land'
-      : '';
+  // Which SVG frame to show
+  const currentFrameIndex = isShaking ? shakeFrameIndex : physicsFrameIndex;
+
+  // Show the landed colorized SVG only after physics settles
+  const showLandedSvg = hasSettled && showNote && landedSvgUrl;
+
+  // Shake CSS class (only during shake phase)
+  const shakeClass = isShaking ? shakeVariantRef.current : '';
 
   return (
-    // Outer wrapper: base rotation + settle rock (separate from inner roll animation)
     <div
-      className={`w-28 h-28 sm:w-32 sm:h-32 ${settling ? 'animate-settle' : ''}`}
+      className={`w-28 h-28 sm:w-32 sm:h-32 ${hasSettled && showNote ? 'cursor-pointer' : ''}`}
       style={{
-        transform: `rotate(${rotation}deg)`,
-        filter: showNote ? `drop-shadow(0 0 8px ${color}40)` : undefined,
-        '--settle-base': `${rotation}deg`,
-        '--settle-rock': settleRockRef.current,
-        '--settle-duration': settleDurationRef.current,
-      } as React.CSSProperties}
+        transform: hasSettled ? `rotate(${rotation}deg)` : undefined,
+        filter: hasSettled && showNote ? `drop-shadow(0 2px 4px rgba(0,0,0,0.15)) drop-shadow(0 0 10px ${color}30)` : undefined,
+      }}
+      onClick={() => { if (hasSettled && note) playNote(note); }}
     >
-      {/* Inner: animations (shake/land/settle own the transform here) */}
-      <div
-        className={`relative w-full h-full ${animClasses}`}
-        style={{
-          animationDelay: isShaking ? shakeDelayRef.current : undefined,
-          '--roll-dist': rollDistRef.current,
-          '--roll-spin': rollSpinRef.current,
-        } as React.CSSProperties}
-      >
-        {/* Dice SVG */}
-        {showNote && landedSvgUrl ? (
-          <img src={landedSvgUrl} alt="die" className="w-full h-full" />
-        ) : (
-          <div className="relative w-full h-full">
-            <img
-              src={SHAKE_FRAMES[frameIndex]}
-              alt="die"
-              className="w-full h-full"
-              style={frameIndex === 1 ? { filter: 'invert(1) brightness(2)' } : undefined}
-            />
-            {isShaking && (
-              <div
-                className="absolute inset-0 rounded-lg mix-blend-multiply opacity-50 transition-colors duration-150"
-                style={{ backgroundColor: ALL_COLORS[colorIndex] }}
+      {/* Physics container: rAF controls transform during flight */}
+      <div ref={containerRef} className="w-full h-full">
+        {/* Shake animation wrapper */}
+        <div
+          className={`relative w-full h-full ${shakeClass}`}
+          style={{
+            animationDelay: isShaking ? shakeDelayRef.current : undefined,
+          }}
+        >
+          {/* Landed colorized SVG */}
+          {showLandedSvg ? (
+            <img src={landedSvgUrl} alt="die" className="w-full h-full" />
+          ) : (
+            <div className="relative w-full h-full">
+              <img
+                src={SHAKE_FRAMES[currentFrameIndex]}
+                alt="die"
+                className="w-full h-full"
+                style={currentFrameIndex === 1 ? { filter: 'invert(1) brightness(2)' } : undefined}
               />
-            )}
-          </div>
-        )}
+              {(isShaking || isFlying) && (
+                <div
+                  className="absolute inset-0 rounded-lg mix-blend-multiply opacity-50 transition-colors duration-150"
+                  style={{ backgroundColor: ALL_COLORS[isFlying ? physicsFrameIndex : colorIndex] }}
+                />
+              )}
+            </div>
+          )}
 
-        {/* Note label / idle "?" centered on the face (coordinates from SVG red dot marker, adjusted for group transform) */}
-        {(showNote || isIdle) && (
-          <div
-            className="absolute font-bold font-[Poppins]"
-            style={{
-              left: '55.74%',
-              top: '57.05%',
-              transform: 'translate(-50%, -50%)',
-              lineHeight: 1,
-              textAlign: 'center',
-              color: 'transparent',
-              WebkitBackgroundClip: 'text',
-              backgroundClip: 'text',
-              backgroundColor: showNote
-                ? (isBlack ? '#fff' : color)
-                : '#888',
-              fontSize: showNote
-                ? (label.length > 2 ? '2.2rem' : '2.8rem')
-                : '2.8rem',
-              textShadow: showNote
-                ? (isBlack
-                    ? '2px 2px 3px rgba(255,255,255,0.85), 0 0 0 rgba(0,0,0,0.6)'
-                    : '2px 2px 3px rgba(255,255,255,0.2), 0 0 0 rgba(0,0,0,0.6)')
-                : '2px 2px 3px rgba(255,255,255,0.85), 0 0 0 rgba(0,0,0,0.4)',
-            }}
-          >
-            {showNote ? label : '?'}
-          </div>
-        )}
+          {/* Note label / idle "?" */}
+          {(showLandedSvg || isIdle) && (
+            <div
+              className="absolute font-bold font-[Poppins]"
+              style={{
+                left: '55.74%',
+                top: '57.05%',
+                transform: 'translate(-50%, -50%)',
+                lineHeight: 1,
+                textAlign: 'center',
+                color: 'transparent',
+                WebkitBackgroundClip: 'text',
+                backgroundClip: 'text',
+                backgroundColor: showLandedSvg
+                  ? (isBlack ? '#fff' : color)
+                  : '#888',
+                fontSize: showLandedSvg
+                  ? (label.length > 2 ? '2.2rem' : '2.8rem')
+                  : '2.8rem',
+                textShadow: showLandedSvg
+                  ? (isBlack
+                      ? '2px 2px 3px rgba(255,255,255,0.85), 0 0 0 rgba(0,0,0,0.6)'
+                      : '2px 2px 3px rgba(255,255,255,0.2), 0 0 0 rgba(0,0,0,0.6)')
+                  : '2px 2px 3px rgba(255,255,255,0.85), 0 0 0 rgba(0,0,0,0.4)',
+              }}
+            >
+              {showLandedSvg ? label : '?'}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

@@ -7,7 +7,8 @@ export default function App() {
   const started = useDiceStore((s) => s.started);
 
   return (
-    <div className="w-full h-dvh overflow-hidden font-[Poppins] bg-gray-900 flex flex-col">
+    <div className="w-full h-dvh overflow-hidden font-[Poppins] bg-gradient-to-b from-slate-50 to-slate-100 flex flex-col">
+      <h1 className="text-center text-slate-300 text-5xl font-[Knewave] pt-4">MusiDice</h1>
       <DiceArea />
       <Toolbar />
       {!started && <Overlay />}
