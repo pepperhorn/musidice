@@ -39,3 +39,22 @@ export async function playNote(name: NoteName, octave: number = 4, duration: num
   const p = await ensurePiano();
   p.start({ note: midi, duration });
 }
+
+export async function playArpeggio(
+  notes: Array<{ note: NoteName; octave: number }>,
+  stagger: number = 80,
+  duration: number = 1.5,
+) {
+  // Sort low to high
+  const sorted = [...notes].sort((a, b) => {
+    const midiA = noteToMidi(SMPLR_NOTE_MAP[a.note], a.octave);
+    const midiB = noteToMidi(SMPLR_NOTE_MAP[b.note], b.octave);
+    return midiA - midiB;
+  });
+  for (let i = 0; i < sorted.length; i++) {
+    playNote(sorted[i].note, sorted[i].octave, duration);
+    if (i < sorted.length - 1) {
+      await new Promise((r) => setTimeout(r, stagger));
+    }
+  }
+}

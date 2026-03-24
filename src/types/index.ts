@@ -15,3 +15,21 @@ export interface DicePairResult {
 }
 
 export type RollingPhase = 'idle' | 'shaking' | 'landing';
+
+export type GameMode = 'notes' | 'chords';
+
+export type ChordRootMode = 'simple' | 'all';
+
+export interface ChordDieResult {
+  note: NoteName;
+  octave: number;
+  landed: boolean;
+}
+
+export interface ChordGroupResult {
+  root: NoteName;
+  label: string;
+  dice: ChordDieResult[];
+  inversionLevel: number;
+  spellingMode: 'flat' | 'sharp';
+}

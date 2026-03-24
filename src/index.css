@@ -1,9 +1,10 @@
-@import url('https://fonts.googleapis.com/css2?family=Knewave&family=Poppins:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Knewave&family=Noto+Music&family=Poppins:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
 
 body {
   margin: 0;
 }
+
 
 /* --- Dice shake: 3 variants with different wobble patterns --- */
 @keyframes dice-shake-1 {
@@ -74,4 +75,95 @@ body {
 
 .animate-pulse-glow {
   animation: pulse-glow 1s ease-in-out infinite;
+}
+
+/* --- Fade in for chord labels and mode transitions --- */
+@keyframes fade-in {
+  0% { opacity: 0; transform: translateY(-8px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.4s ease-out forwards;
+}
+
+/* --- Mode switch transition --- */
+.dice-grid {
+  transition: opacity 0.3s ease-in-out;
+}
+
+.dice-grid-enter {
+  animation: fade-in 0.3s ease-out forwards;
+}
+
+/* --- Page slide transitions --- */
+@keyframes slide-in-left {
+  0% { transform: translateX(60px); opacity: 0; }
+  100% { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes slide-in-right {
+  0% { transform: translateX(-60px); opacity: 0; }
+  100% { transform: translateX(0); opacity: 1; }
+}
+
+.animate-slide-in-left {
+  animation: slide-in-left 0.35s ease-out forwards;
+}
+
+.animate-slide-in-right {
+  animation: slide-in-right 0.35s ease-out forwards;
+}
+
+/* --- Nudge shakes for Get Shakin' button --- */
+@keyframes nudge-shake-1 {
+  0%, 85% { transform: rotate(0deg); }
+  88% { transform: rotate(-6deg); }
+  91% { transform: rotate(6deg); }
+  94% { transform: rotate(-4deg); }
+  97% { transform: rotate(3deg); }
+  100% { transform: rotate(0deg); }
+}
+
+@keyframes nudge-shake-2 {
+  0%, 82% { transform: translateX(0) rotate(0deg); }
+  84% { transform: translateX(-4px) rotate(-3deg); }
+  87% { transform: translateX(5px) rotate(4deg); }
+  90% { transform: translateX(-5px) rotate(-5deg); }
+  93% { transform: translateX(4px) rotate(3deg); }
+  96% { transform: translateX(-2px) rotate(-1deg); }
+  100% { transform: translateX(0) rotate(0deg); }
+}
+
+.animate-nudge-1 {
+  animation: nudge-shake-1 5s ease-in-out infinite;
+}
+
+.animate-nudge-2 {
+  animation: nudge-shake-2 4.5s ease-in-out infinite;
+}
+
+.app-title-btn:hover:not(:disabled) {
+  animation: nudge-shake-1 0.5s ease-in-out;
+}
+
+/* --- Typewriter effect for Composerating --- */
+@keyframes typewriter {
+  0% { width: 0; }
+  50% { width: 16ch; }
+  70% { width: 16ch; }
+  100% { width: 0; }
+}
+
+@keyframes blink-caret {
+  0%, 100% { border-color: transparent; }
+  50% { border-color: #94a3b8; }
+}
+
+.animate-typewriter {
+  overflow: hidden;
+  white-space: nowrap;
+  width: 0;
+  border-right: 2px solid #94a3b8;
+  animation: typewriter 2.5s steps(16) infinite, blink-caret 0.6s step-end infinite;
 }

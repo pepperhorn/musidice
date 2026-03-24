@@ -26,23 +26,26 @@ export const BLACK_KEYS: Set<NoteName> = new Set([
 ]);
 
 const FLAT_LABELS: Partial<Record<NoteName, string>> = {
-  'C#/Db': 'Db',
-  'D#/Eb': 'Eb',
-  'F#/Gb': 'Gb',
-  'G#/Ab': 'Ab',
+  'C#/Db': 'D♭',
+  'D#/Eb': 'E♭',
+  'F#/Gb': 'G♭',
+  'G#/Ab': 'A♭',
+  'Bb': 'B♭',
 };
 
 const SHARP_LABELS: Partial<Record<NoteName, string>> = {
-  'C#/Db': 'C#',
-  'D#/Eb': 'D#',
-  'F#/Gb': 'F#',
-  'G#/Ab': 'G#',
-  'Bb': 'A#',
+  'C#/Db': 'C♯',
+  'D#/Eb': 'D♯',
+  'F#/Gb': 'F♯',
+  'G#/Ab': 'G♯',
+  'Bb': 'A♯',
 };
 
 export function noteLabel(name: NoteName, mode: 'flat' | 'sharp' | 'natural'): string {
-  if (mode === 'natural') return name.split('/')[0].replace('#', '');
-  return (mode === 'flat' ? FLAT_LABELS : SHARP_LABELS)[name] ?? name;
+  // Natural mode only affects which notes get rolled, not how they display.
+  // When displaying, fall back to flat spelling.
+  const displayMode = mode === 'natural' ? 'flat' : mode;
+  return (displayMode === 'flat' ? FLAT_LABELS : SHARP_LABELS)[name] ?? name;
 }
 
 export const SMPLR_NOTE_MAP: Record<NoteName, string> = {

@@ -8,7 +8,7 @@ interface DicePairProps {
 
 export function DicePair({ result, rollingPhase }: DicePairProps) {
   return (
-    <div className="flex items-center gap-4">
+    <div className="dice-pair flex items-center gap-4">
       <Die
         note={result?.die1.note ?? null}
         landed={result?.die1.landed ?? false}

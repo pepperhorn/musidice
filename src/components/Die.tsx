@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { CRF_COLORS, noteLabel, BLACK_KEYS } from '../constants/music';
+import { spellNote } from '../constants/chords';
 import { useDiceStore } from '../state/store';
 import type { NoteName, RollingPhase } from '../types';
 import { useDiePhysics } from '../hooks/useDiePhysics';
@@ -47,20 +48,28 @@ interface DieProps {
   landed: boolean;
   rollingPhase: RollingPhase;
   dieIndex: number;
+  octave?: number;
+  playOnSettle?: boolean;
+  onSettle?: () => void;
+  spellingOverride?: 'sharp' | 'flat';
 }
 
-export function Die({ note, landed, rollingPhase, dieIndex }: DieProps) {
+export function Die({ note, landed, rollingPhase, dieIndex, octave = 4, playOnSettle = true, onSettle: onSettleProp, spellingOverride }: DieProps) {
   const accidentalMode = useDiceStore((s) => s.accidentalMode);
 
   const isShaking = rollingPhase === 'shaking' && !landed;
   const showNote = landed && note;
   const isIdle = rollingPhase === 'idle' && !landed;
 
-  // Physics-driven landing animation — play note when die settles
+  // Physics-driven landing animation — play note or notify parent when die settles
   const handleSettle = useRef(() => {
-    if (note) playNote(note);
+    if (playOnSettle && note) playNote(note, octave);
+    onSettleProp?.();
   });
-  handleSettle.current = () => { if (note) playNote(note); };
+  handleSettle.current = () => {
+    if (playOnSettle && note) playNote(note, octave);
+    onSettleProp?.();
+  };
   const { containerRef, phase: physicsPhase, frameIndex: physicsFrameIndex } = useDiePhysics(landed, dieIndex, () => handleSettle.current());
   const isFlying = physicsPhase === 'flying';
   const hasSettled = physicsPhase === 'done';
@@ -129,7 +138,9 @@ export function Die({ note, landed, rollingPhase, dieIndex }: DieProps) {
   }, [svgText, showNote, note, colorsRef.current]);
 
   const color = note ? CRF_COLORS[note] : '#666';
-  const label = note ? noteLabel(note, accidentalMode) : '';
+  const label = note
+    ? (spellingOverride ? spellNote(note, spellingOverride) : noteLabel(note, accidentalMode))
+    : '';
   const isBlack = note ? BLACK_KEYS.has(note) : false;
   const rotation = baseRotationRef.current;
 
@@ -144,36 +155,36 @@ export function Die({ note, landed, rollingPhase, dieIndex }: DieProps) {
 
   return (
     <div
-      className={`w-28 h-28 sm:w-32 sm:h-32 ${hasSettled && showNote ? 'cursor-pointer' : ''}`}
+      className={`die w-28 h-28 sm:w-32 sm:h-32 ${hasSettled && showNote ? 'cursor-pointer' : ''}`}
       style={{
         transform: hasSettled ? `rotate(${rotation}deg)` : undefined,
         filter: hasSettled && showNote ? `drop-shadow(0 2px 4px rgba(0,0,0,0.15)) drop-shadow(0 0 10px ${color}30)` : undefined,
       }}
-      onClick={() => { if (hasSettled && note) playNote(note); }}
+      onClick={() => { if (hasSettled && note) playNote(note, octave); }}
     >
       {/* Physics container: rAF controls transform during flight */}
-      <div ref={containerRef} className="w-full h-full">
+      <div ref={containerRef} className="die-physics w-full h-full">
         {/* Shake animation wrapper */}
         <div
-          className={`relative w-full h-full ${shakeClass}`}
+          className={`die-shake relative w-full h-full ${shakeClass}`}
           style={{
             animationDelay: isShaking ? shakeDelayRef.current : undefined,
           }}
         >
           {/* Landed colorized SVG */}
           {showLandedSvg ? (
-            <img src={landedSvgUrl} alt="die" className="w-full h-full" />
+            <img src={landedSvgUrl} alt="die" className="die-face-landed w-full h-full" />
           ) : (
-            <div className="relative w-full h-full">
+            <div className="die-face-shaking relative w-full h-full">
               <img
                 src={SHAKE_FRAMES[currentFrameIndex]}
                 alt="die"
-                className="w-full h-full"
+                className="die-frame w-full h-full"
                 style={currentFrameIndex === 1 ? { filter: 'invert(1) brightness(2)' } : undefined}
               />
               {(isShaking || isFlying) && (
                 <div
-                  className="absolute inset-0 rounded-lg mix-blend-multiply opacity-50 transition-colors duration-150"
+                  className="die-color-overlay absolute inset-0 rounded-lg mix-blend-multiply opacity-50 transition-colors duration-150"
                   style={{ backgroundColor: ALL_COLORS[isFlying ? physicsFrameIndex : colorIndex] }}
                 />
               )}
@@ -183,7 +194,7 @@ export function Die({ note, landed, rollingPhase, dieIndex }: DieProps) {
           {/* Note label / idle "?" */}
           {(showLandedSvg || isIdle) && (
             <div
-              className="absolute font-bold font-[Poppins]"
+              className="die-note-label absolute font-bold font-[Poppins]"
               style={{
                 left: '55.74%',
                 top: '57.05%',

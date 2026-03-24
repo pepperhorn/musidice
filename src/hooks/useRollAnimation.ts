@@ -1,7 +1,8 @@
 import { useCallback } from 'react';
 import { useDiceStore } from '../state/store';
 import { DIE1_FACES, DIE2_FACES } from '../constants/music';
-import type { DicePairResult } from '../types';
+import { generateChord, applyInversion } from '../constants/chords';
+import type { ChordGroupResult, DicePairResult } from '../types';
 
 const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -9,11 +10,10 @@ function randomFrom<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];
 }
 
-/** Shared landing sequence: shakes then lands dice one by one */
+/** Shared landing sequence for note pairs */
 async function animateLanding(allResults: DicePairResult[]) {
   const count = allResults.length;
 
-  // Initialize results with nothing landed
   useDiceStore.setState({
     results: allResults.map((r) => ({
       die1: { ...r.die1, landed: false },
@@ -23,16 +23,12 @@ async function animateLanding(allResults: DicePairResult[]) {
     currentPairIndex: 0,
   });
 
-  // Shake phase
   await delay(700 + Math.random() * 300);
 
-  // Sequential landing for each pair with randomized gaps
   for (let i = 0; i < count; i++) {
     useDiceStore.setState({ currentPairIndex: i });
-
     if (i > 0) await delay(300 + Math.random() * 200);
 
-    // Land die 1
     useDiceStore.setState((state) => {
       const results = [...state.results];
       results[i] = {
@@ -42,10 +38,8 @@ async function animateLanding(allResults: DicePairResult[]) {
       return { results, rollingPhase: 'landing' };
     });
 
-    // Random gap before die 2 lands
     await delay(400 + Math.random() * 400);
 
-    // Land die 2
     useDiceStore.setState((state) => {
       const results = [...state.results];
       results[i] = {
@@ -60,49 +54,109 @@ async function animateLanding(allResults: DicePairResult[]) {
   useDiceStore.setState({ rollingPhase: 'idle' });
 }
 
+/** Landing sequence for chord groups — all dice in a group land simultaneously */
+async function animateChordLanding(allChords: ChordGroupResult[]) {
+  const count = allChords.length;
+
+  useDiceStore.setState({
+    chordResults: allChords.map((chord) => ({
+      ...chord,
+      dice: chord.dice.map((d) => ({ ...d, landed: false })),
+    })),
+    rollingPhase: 'shaking',
+    currentPairIndex: 0,
+  });
+
+  await delay(700 + Math.random() * 300);
+
+  for (let i = 0; i < count; i++) {
+    useDiceStore.setState({ currentPairIndex: i });
+    if (i > 0) await delay(600 + Math.random() * 400);
+
+    // Land ALL dice in this chord group at once
+    useDiceStore.setState((state) => {
+      const chordResults = [...state.chordResults];
+      chordResults[i] = {
+        ...chordResults[i],
+        dice: chordResults[i].dice.map((d) => ({ ...d, landed: true })),
+      };
+      return { chordResults, rollingPhase: 'landing' };
+    });
+
+    await delay(800 + Math.random() * 400);
+  }
+
+  useDiceStore.setState({ rollingPhase: 'idle' });
+}
+
 export function useRollAnimation() {
-  const pairCount = useDiceStore((s) => s.pairCount);
   const rollingPhase = useDiceStore((s) => s.rollingPhase);
 
   const roll = useCallback(async () => {
     if (rollingPhase !== 'idle') return;
-
     const store = useDiceStore.getState();
-    const count = store.pairCount;
-    const isNatural = store.accidentalMode === 'natural';
 
-    const allResults: DicePairResult[] = Array.from({ length: count }, () => ({
-      die1: { note: randomFrom(DIE1_FACES), landed: false },
-      die2: { note: randomFrom(isNatural ? DIE1_FACES : DIE2_FACES), landed: false },
-    }));
-
-    await animateLanding(allResults);
-  }, [rollingPhase, pairCount]);
+    if (store.mode === 'chords') {
+      const chords: ChordGroupResult[] = Array.from(
+        { length: store.chordCount },
+        () => generateChord(store.partials, store.accidentalMode, store.chordRootMode),
+      );
+      await animateChordLanding(chords);
+    } else {
+      const isNatural = store.accidentalMode === 'natural';
+      const allResults: DicePairResult[] = Array.from({ length: store.pairCount }, () => ({
+        die1: { note: randomFrom(DIE1_FACES), landed: false },
+        die2: { note: randomFrom(isNatural ? DIE1_FACES : DIE2_FACES), landed: false },
+      }));
+      await animateLanding(allResults);
+    }
+  }, [rollingPhase]);
 
   const shuffle = useCallback(async () => {
     if (rollingPhase !== 'idle') return;
-
     const store = useDiceStore.getState();
-    const currentResults = store.results;
-    if (currentResults.length === 0) return;
 
-    // Collect all notes, shuffle them, re-pair
-    const allNotes = currentResults.flatMap((r) => [r.die1.note, r.die2.note]);
-    for (let i = allNotes.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [allNotes[i], allNotes[j]] = [allNotes[j], allNotes[i]];
+    if (store.mode === 'chords') {
+      // Re-roll chords with same count and partials
+      const chords: ChordGroupResult[] = Array.from(
+        { length: store.chordCount },
+        () => generateChord(store.partials, store.accidentalMode, store.chordRootMode),
+      );
+      await animateChordLanding(chords);
+    } else {
+      const currentResults = store.results;
+      if (currentResults.length === 0) return;
+
+      const allNotes = currentResults.flatMap((r) => [r.die1.note, r.die2.note]);
+      for (let i = allNotes.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [allNotes[i], allNotes[j]] = [allNotes[j], allNotes[i]];
+      }
+
+      const shuffledResults: DicePairResult[] = [];
+      for (let i = 0; i < allNotes.length; i += 2) {
+        shuffledResults.push({
+          die1: { note: allNotes[i], landed: false },
+          die2: { note: allNotes[i + 1], landed: false },
+        });
+      }
+      await animateLanding(shuffledResults);
     }
-
-    const shuffledResults: DicePairResult[] = [];
-    for (let i = 0; i < allNotes.length; i += 2) {
-      shuffledResults.push({
-        die1: { note: allNotes[i], landed: false },
-        die2: { note: allNotes[i + 1], landed: false },
-      });
-    }
-
-    await animateLanding(shuffledResults);
   }, [rollingPhase]);
 
-  return { roll, shuffle, isRolling: rollingPhase !== 'idle' };
+  const invert = useCallback(async () => {
+    if (rollingPhase !== 'idle') return;
+    const store = useDiceStore.getState();
+    if (store.mode !== 'chords' || store.chordResults.length === 0) return;
+
+    const inverted = store.chordResults.map((chord) => {
+      const maxInv = Math.min(chord.dice.length - 1, 3);
+      const level = 1 + Math.floor(Math.random() * maxInv);
+      return applyInversion(chord, level);
+    });
+
+    await animateChordLanding(inverted);
+  }, [rollingPhase]);
+
+  return { roll, shuffle, invert, isRolling: rollingPhase !== 'idle' };
 }

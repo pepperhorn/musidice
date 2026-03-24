@@ -19,14 +19,24 @@ interface PhysicsParams {
 
 export function useDiePhysics(landed: boolean, dieIndex: number, onSettle?: () => void) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [phase, setPhase] = useState<PhysicsPhase>('idle');
+  const [phase, setPhase] = useState<PhysicsPhase>(landed ? 'done' : 'idle');
   const [frameIndex, setFrameIndex] = useState(0);
   const paramsRef = useRef<PhysicsParams | null>(null);
   const rafRef = useRef<number>(0);
-  const phaseRef = useRef<PhysicsPhase>('idle');
+  const phaseRef = useRef<PhysicsPhase>(landed ? 'done' : 'idle');
+  // Track whether landed was true on initial mount (page switch — skip animation)
+  const wasLandedOnMountRef = useRef(landed);
 
   useEffect(() => {
     if (!landed || !containerRef.current) return;
+
+    // If already landed on mount (e.g. page switch), skip physics entirely
+    if (wasLandedOnMountRef.current) {
+      wasLandedOnMountRef.current = false; // allow future rolls to animate
+      phaseRef.current = 'done';
+      setPhase('done');
+      return;
+    }
 
     // Initialize physics with stagger based on dieIndex
     const stagger = dieIndex * 0.15;
@@ -143,6 +153,7 @@ export function useDiePhysics(landed: boolean, dieIndex: number, onSettle?: () =
       setPhase('idle');
       setFrameIndex(0);
       phaseRef.current = 'idle';
+      wasLandedOnMountRef.current = false; // next landing should animate
       if (containerRef.current) {
         containerRef.current.style.transform = '';
         containerRef.current.style.opacity = '';
