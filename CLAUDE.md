@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-Musidice — a musical dice game built with React, TypeScript, Vite, and Tailwind CSS. Two modes: Notes (random note pairs) and Chords (random chord groups with extensions/inversions).
+Roll'd — a musical dice game built with React, TypeScript, Vite, and Tailwind CSS. Two modes: Notes (random note pairs) and Chords (random chord groups with extensions/inversions).
 
 ## Architecture
 

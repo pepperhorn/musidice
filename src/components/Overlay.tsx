@@ -11,7 +11,7 @@ export function Overlay() {
 
   return (
     <div className="overlay fixed inset-0 z-50 flex flex-col items-center justify-center bg-white/80 backdrop-blur-sm">
-      <h1 className="overlay-title text-5xl text-slate-800 mb-2 font-[Knewave]">MusiDice</h1>
+      <h1 className="overlay-title text-5xl text-slate-800 mb-2 font-[Knewave]">Roll'd</h1>
       <p className="overlay-subtitle text-slate-500 mb-8 font-[Poppins]">Roll your own composition ideas</p>
       <button
         onClick={handleStart}
