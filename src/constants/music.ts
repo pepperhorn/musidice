@@ -41,10 +41,10 @@ const SHARP_LABELS: Partial<Record<NoteName, string>> = {
   'Bb': 'A♯',
 };
 
-export function noteLabel(name: NoteName, mode: 'flat' | 'sharp' | 'natural'): string {
-  // Natural mode only affects which notes get rolled, not how they display.
-  // When displaying, fall back to flat spelling.
-  const displayMode = mode === 'natural' ? 'flat' : mode;
+export function noteLabel(name: NoteName, mode: 'off' | 'flat' | 'sharp' | 'natural'): string {
+  // Natural and off modes fall back to flat spelling for display.
+  // Off mode affects which notes can be rolled (any), not display.
+  const displayMode = (mode === 'natural' || mode === 'off') ? 'flat' : mode;
   return (displayMode === 'flat' ? FLAT_LABELS : SHARP_LABELS)[name] ?? name;
 }
 

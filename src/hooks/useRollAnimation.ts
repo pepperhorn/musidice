@@ -103,10 +103,12 @@ export function useRollAnimation() {
       );
       await animateChordLanding(chords);
     } else {
-      const isNatural = store.accidentalMode === 'natural';
+      const die2Pool = store.accidentalMode === 'natural' ? DIE1_FACES
+        : store.accidentalMode === 'off' ? [...DIE1_FACES, ...DIE2_FACES]
+        : DIE2_FACES;
       const allResults: DicePairResult[] = Array.from({ length: store.pairCount }, () => ({
         die1: { note: randomFrom(DIE1_FACES), landed: false },
-        die2: { note: randomFrom(isNatural ? DIE1_FACES : DIE2_FACES), landed: false },
+        die2: { note: randomFrom(die2Pool), landed: false },
       }));
       await animateLanding(allResults);
     }

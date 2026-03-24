@@ -2,8 +2,9 @@ import { useDiceStore } from '../state/store';
 import { useRollAnimation } from '../hooks/useRollAnimation';
 import type { AccidentalMode } from '../types';
 
-const ACCIDENTAL_CYCLE: AccidentalMode[] = ['flat', 'natural', 'sharp'];
+const ACCIDENTAL_CYCLE: AccidentalMode[] = ['off', 'flat', 'natural', 'sharp'];
 const ACCIDENTAL_LABELS: Record<AccidentalMode, string> = {
+  off: '—',
   flat: '♭',
   natural: '♮',
   sharp: '♯',

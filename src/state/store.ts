@@ -33,7 +33,7 @@ interface DiceState {
 export const useDiceStore = create<DiceState>((set) => ({
   started: false,
   mode: 'notes',
-  accidentalMode: 'flat',
+  accidentalMode: 'off',
   pairCount: 1,
   chordCount: 1,
   partials: 0,
