@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { CRF_COLORS, noteLabel, BLACK_KEYS } from '../constants/music';
-import { spellNote } from '../constants/chords';
+import { spellNote, spellNoteEnharmonic } from '../constants/chords';
 import { useDiceStore } from '../state/store';
 import type { NoteName, RollingPhase } from '../types';
 import { useDiePhysics } from '../hooks/useDiePhysics';
@@ -52,9 +52,10 @@ interface DieProps {
   playOnSettle?: boolean;
   onSettle?: () => void;
   spellingOverride?: 'sharp' | 'flat';
+  enharmonic?: boolean;
 }
 
-export function Die({ note, landed, rollingPhase, dieIndex, octave = 4, playOnSettle = true, onSettle: onSettleProp, spellingOverride }: DieProps) {
+export function Die({ note, landed, rollingPhase, dieIndex, octave = 4, playOnSettle = true, onSettle: onSettleProp, spellingOverride, enharmonic }: DieProps) {
   const accidentalMode = useDiceStore((s) => s.accidentalMode);
 
   const isShaking = rollingPhase === 'shaking' && !landed;
@@ -139,7 +140,7 @@ export function Die({ note, landed, rollingPhase, dieIndex, octave = 4, playOnSe
 
   const color = note ? CRF_COLORS[note] : '#666';
   const label = note
-    ? (spellingOverride ? spellNote(note, spellingOverride) : noteLabel(note, accidentalMode))
+    ? (spellingOverride ? (enharmonic ? spellNoteEnharmonic(note, spellingOverride) : spellNote(note, spellingOverride)) : noteLabel(note, accidentalMode))
     : '';
   const isBlack = note ? BLACK_KEYS.has(note) : false;
   const rotation = baseRotationRef.current;
@@ -155,7 +156,7 @@ export function Die({ note, landed, rollingPhase, dieIndex, octave = 4, playOnSe
 
   return (
     <div
-      className={`die w-28 h-28 sm:w-32 sm:h-32 ${hasSettled && showNote ? 'cursor-pointer' : ''}`}
+      className={`die w-28 h-28 sm:w-32 sm:h-32 select-none ${hasSettled && showNote ? 'cursor-pointer' : ''}`}
       style={{
         transform: hasSettled ? `rotate(${rotation}deg)` : undefined,
         filter: hasSettled && showNote ? `drop-shadow(0 2px 4px rgba(0,0,0,0.15)) drop-shadow(0 0 10px ${color}30)` : undefined,

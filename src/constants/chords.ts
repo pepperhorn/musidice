@@ -89,128 +89,154 @@ export function spellNote(note: NoteName, mode: 'sharp' | 'flat'): string {
   return mode === 'sharp' ? SHARP_SPELLING[note] : FLAT_SPELLING[note];
 }
 
+/**
+ * Expanded enharmonic spelling — includes natural↔accidental equivalents
+ * (B↔C♭, E↔F♭, C↔B♯, F↔E♯). Used after user respells a chord.
+ */
+const SHARP_ENHARMONIC: Record<NoteName, string> = {
+  ...SHARP_SPELLING,
+  'C': 'B♯', 'F': 'E♯',
+};
+
+const FLAT_ENHARMONIC: Record<NoteName, string> = {
+  ...FLAT_SPELLING,
+  'B': 'C♭', 'E': 'F♭',
+};
+
+/** Spell a note with full enharmonic support (for respelled chords) */
+export function spellNoteEnharmonic(note: NoteName, mode: 'sharp' | 'flat'): string {
+  return mode === 'sharp' ? SHARP_ENHARMONIC[note] : FLAT_ENHARMONIC[note];
+}
+
 // --- Chord quality and interval definitions ---
 
 type ChordQuality = 'major' | 'minor' | 'diminished' | 'augmented';
 
-/** Base triad intervals (semitones from root) */
-const BASE_TRIADS: Record<ChordQuality, number[]> = {
-  major:      [0, 4, 7],
-  minor:      [0, 3, 7],
-  diminished: [0, 3, 6],
-  augmented:  [0, 4, 8],
-};
+// --- Chart-based chord templates (from PepperHorn Common Chord Spellings) ---
 
-// --- Partial extension system ---
-
-interface Extension {
-  name: string;           // suffix for chord label
-  intervals: number[];    // semitones to ADD to the triad
-  replaces3rd?: number;   // if set, replaces the 3rd with this semitone
-  removesNotes?: number[];// semitone positions to remove (e.g., power chord removes 3rd)
-  requires7th?: boolean;  // needs a 7th to already be present
-  count: number;          // how many partial slots this uses
+interface ChordTemplate {
+  label: string;          // chord symbol suffix (e.g., 'm7', 'maj9(#11)')
+  quality: ChordQuality;  // base quality for spelling mode
+  intervals: number[];    // semitones from root
+  complexity: number;     // how many extension "partials" this needs (0=triad, 1-5=extensions)
 }
 
-/** Extensions available per quality at partials=1 */
-const EXTENSIONS_P1: Record<ChordQuality, Extension[]> = {
-  major: [
-    { name: 'sus2', intervals: [], replaces3rd: 2, count: 1 },
-    { name: 'sus4', intervals: [], replaces3rd: 5, count: 1 },
-    { name: '6', intervals: [9], count: 1 },
-    { name: 'maj7', intervals: [11], count: 1 },
-    { name: '7', intervals: [10], count: 1 },
-    { name: '5', intervals: [], removesNotes: [4], count: 1 },
-  ],
-  minor: [
-    { name: '7', intervals: [10], count: 1 },
-    { name: '6', intervals: [9], count: 1 },
-    { name: 'maj7', intervals: [11], count: 1 },
-  ],
-  diminished: [
-    { name: '7', intervals: [9], count: 1 },   // dim7 = 9 semitones
-    { name: 'm7b5', intervals: [10], count: 1 }, // half-dim
-  ],
-  augmented: [
-    { name: '7', intervals: [10], count: 1 },
-  ],
-};
+/**
+ * Every valid chord type, sourced from the PepperHorn Common Chord Spellings sheet.
+ * Complexity controls which chords appear at each partials setting.
+ */
+const CHORD_TEMPLATES: ChordTemplate[] = [
+  // --- Major triads & simple extensions (complexity 0-1) ---
+  { label: '',           quality: 'major',      intervals: [0, 4, 7],          complexity: 0 },
+  { label: '+',          quality: 'augmented',   intervals: [0, 4, 8],          complexity: 0 },
+  { label: 'dim',        quality: 'diminished',  intervals: [0, 3, 6],          complexity: 0 },
+  { label: '6',          quality: 'major',       intervals: [0, 4, 7, 9],       complexity: 1 },
+  { label: '7',          quality: 'major',       intervals: [0, 4, 7, 10],      complexity: 1 },
+  { label: 'maj7',       quality: 'major',       intervals: [0, 4, 7, 11],      complexity: 1 },
+  { label: '5',          quality: 'major',       intervals: [0, 7],             complexity: 1 },
+  { label: 'sus2',       quality: 'major',       intervals: [0, 2, 7],          complexity: 1 },
+  { label: 'sus4',       quality: 'major',       intervals: [0, 5, 7],          complexity: 1 },
+  { label: '(add9)',     quality: 'major',       intervals: [0, 4, 7, 14],      complexity: 1 },
 
-/** Higher extensions available at partials=2+ (require a 7th) */
-const HIGHER_EXTENSIONS: Extension[] = [
-  { name: '9', intervals: [14], requires7th: true, count: 1 },
-  { name: 'b9', intervals: [13], requires7th: true, count: 1 },
-  { name: '#9', intervals: [15], requires7th: true, count: 1 },
-  { name: '11', intervals: [17], requires7th: true, count: 1 },
-  { name: '#11', intervals: [18], requires7th: true, count: 1 },
-  { name: '13', intervals: [21], requires7th: true, count: 1 },
-  { name: 'b13', intervals: [20], requires7th: true, count: 1 },
+  // --- Minor triads & simple extensions (complexity 0-1) ---
+  { label: 'm',          quality: 'minor',       intervals: [0, 3, 7],          complexity: 0 },
+  { label: 'm+',         quality: 'minor',       intervals: [0, 3, 8],          complexity: 0 },
+  { label: 'm6',         quality: 'minor',       intervals: [0, 3, 7, 9],       complexity: 1 },
+  { label: 'm7',         quality: 'minor',       intervals: [0, 3, 7, 10],      complexity: 1 },
+  { label: 'm(add9)',    quality: 'minor',       intervals: [0, 3, 7, 14],      complexity: 1 },
+
+  // --- Dominant 7th extensions (complexity 2) ---
+  { label: '7(b5)',      quality: 'major',       intervals: [0, 4, 6, 10],      complexity: 2 },
+  { label: '7(#5)',      quality: 'major',       intervals: [0, 4, 8, 10],      complexity: 2 },
+  { label: '6/9',        quality: 'major',       intervals: [0, 4, 7, 9, 14],   complexity: 2 },
+  { label: '9',          quality: 'major',       intervals: [0, 4, 7, 10, 14],  complexity: 2 },
+  { label: '7(b9)',      quality: 'major',       intervals: [0, 4, 7, 10, 13],  complexity: 2 },
+  { label: '7(#9)',      quality: 'major',       intervals: [0, 4, 7, 10, 15],  complexity: 2 },
+  { label: '7sus',       quality: 'major',       intervals: [0, 5, 7, 10],      complexity: 2 },
+
+  // --- Major 7th extensions (complexity 2) ---
+  { label: 'maj7(b5)',   quality: 'major',       intervals: [0, 4, 6, 11],      complexity: 2 },
+  { label: 'maj7(#5)',   quality: 'major',       intervals: [0, 4, 8, 11],      complexity: 2 },
+  { label: 'maj9',       quality: 'major',       intervals: [0, 4, 7, 11, 14],  complexity: 2 },
+  { label: 'maj7(b9)',   quality: 'major',       intervals: [0, 4, 7, 11, 13],  complexity: 2 },
+  { label: 'maj7(#9)',   quality: 'major',       intervals: [0, 4, 7, 11, 15],  complexity: 2 },
+
+  // --- Minor 7th extensions (complexity 2) ---
+  { label: 'm7(b5)',     quality: 'minor',       intervals: [0, 3, 6, 10],      complexity: 2 },
+  { label: 'm7(#5)',     quality: 'minor',       intervals: [0, 3, 8, 10],      complexity: 2 },
+  { label: 'm6/9',       quality: 'minor',       intervals: [0, 3, 7, 9, 14],   complexity: 2 },
+  { label: 'm9',         quality: 'minor',       intervals: [0, 3, 7, 10, 14],  complexity: 2 },
+  { label: 'm(maj7)',    quality: 'minor',       intervals: [0, 3, 7, 11],      complexity: 2 },
+  { label: 'm7sus',      quality: 'minor',       intervals: [0, 5, 7, 10],      complexity: 2 },
+
+  // --- Diminished extensions (complexity 2) ---
+  { label: 'dim7',       quality: 'diminished',  intervals: [0, 3, 6, 9],       complexity: 2 },
+  { label: 'ø7',         quality: 'diminished',  intervals: [0, 3, 6, 10],      complexity: 2 },
+
+  // --- Augmented extensions (complexity 2) ---
+  { label: '+7',         quality: 'augmented',   intervals: [0, 4, 8, 10],      complexity: 2 },
+
+  // --- Higher dominant extensions (complexity 3) ---
+  { label: '9(b5)',      quality: 'major',       intervals: [0, 4, 6, 10, 14],  complexity: 3 },
+  { label: '9(#5)',      quality: 'major',       intervals: [0, 4, 8, 10, 14],  complexity: 3 },
+  { label: '9(#11)',     quality: 'major',       intervals: [0, 4, 7, 10, 14, 18], complexity: 3 },
+  { label: '9sus',       quality: 'major',       intervals: [0, 5, 7, 10, 14],  complexity: 3 },
+  { label: '13',         quality: 'major',       intervals: [0, 4, 7, 10, 14, 21], complexity: 3 },
+  { label: '13(b9)',     quality: 'major',       intervals: [0, 4, 7, 10, 13, 21], complexity: 3 },
+  { label: '13(#9)',     quality: 'major',       intervals: [0, 4, 7, 10, 15, 21], complexity: 3 },
+  { label: '13(#11)',    quality: 'major',       intervals: [0, 4, 7, 10, 14, 18, 21], complexity: 3 },
+  { label: '13sus',      quality: 'major',       intervals: [0, 5, 7, 10, 14, 21], complexity: 3 },
+
+  // --- Higher major 7th extensions (complexity 3) ---
+  { label: 'maj9(b5)',   quality: 'major',       intervals: [0, 4, 6, 11, 14],  complexity: 3 },
+  { label: 'maj9(#5)',   quality: 'major',       intervals: [0, 4, 8, 11, 14],  complexity: 3 },
+  { label: 'maj9(#11)',  quality: 'major',       intervals: [0, 4, 7, 11, 14, 18], complexity: 3 },
+  { label: 'maj13',      quality: 'major',       intervals: [0, 4, 7, 11, 14, 21], complexity: 3 },
+  { label: 'maj13(#5)',  quality: 'major',       intervals: [0, 4, 8, 11, 14, 21], complexity: 3 },
+  { label: 'maj13(#11)', quality: 'major',       intervals: [0, 4, 7, 11, 14, 18, 21], complexity: 3 },
+
+  // --- Higher minor extensions (complexity 3) ---
+  { label: 'm9(b5)',     quality: 'minor',       intervals: [0, 3, 6, 10, 14],  complexity: 3 },
+  { label: 'm9(#5)',     quality: 'minor',       intervals: [0, 3, 8, 10, 14],  complexity: 3 },
+  { label: 'm7(b9)',     quality: 'minor',       intervals: [0, 3, 7, 10, 13],  complexity: 3 },
+  { label: 'm11',        quality: 'minor',       intervals: [0, 3, 7, 10, 14, 17], complexity: 3 },
+  { label: 'm(maj9)',    quality: 'minor',       intervals: [0, 3, 7, 11, 14],  complexity: 3 },
+  { label: 'm(maj7b5)',  quality: 'minor',       intervals: [0, 3, 6, 11],      complexity: 3 },
+  { label: 'm(maj7#5)',  quality: 'minor',       intervals: [0, 3, 8, 11],      complexity: 3 },
+
+  // --- Complex dominant alterations (complexity 4-5) ---
+  { label: '7(b9,b5)',   quality: 'major',       intervals: [0, 4, 6, 10, 13],  complexity: 4 },
+  { label: '7(b9,#5)',   quality: 'major',       intervals: [0, 4, 8, 10, 13],  complexity: 4 },
+  { label: '7(#9,b5)',   quality: 'major',       intervals: [0, 4, 6, 10, 15],  complexity: 4 },
+  { label: '7(#9,#5)',   quality: 'major',       intervals: [0, 4, 8, 10, 15],  complexity: 4 },
+  { label: '7(#11,b9)',  quality: 'major',       intervals: [0, 4, 7, 10, 13, 18], complexity: 4 },
+  { label: '7(#11,#9)',  quality: 'major',       intervals: [0, 4, 7, 10, 15, 18], complexity: 4 },
+  { label: '13(b5)',     quality: 'major',       intervals: [0, 4, 6, 10, 14, 21], complexity: 4 },
+  { label: '13(#5)',     quality: 'major',       intervals: [0, 4, 8, 10, 14, 21], complexity: 4 },
+  { label: 'm11(b5)',    quality: 'minor',       intervals: [0, 3, 6, 10, 14, 17], complexity: 4 },
+  { label: 'm9(#11)',    quality: 'minor',       intervals: [0, 3, 7, 10, 14, 18], complexity: 4 },
+  { label: 'm13',        quality: 'minor',       intervals: [0, 3, 7, 10, 14, 17, 21], complexity: 4 },
+  { label: 'm13(b5)',    quality: 'minor',       intervals: [0, 3, 6, 10, 14, 17, 21], complexity: 4 },
+  { label: 'm13(#5)',    quality: 'minor',       intervals: [0, 3, 8, 10, 14, 17, 21], complexity: 4 },
+  { label: 'm(maj9b5)',  quality: 'minor',       intervals: [0, 3, 6, 11, 14],  complexity: 4 },
+  { label: 'm(maj9#5)',  quality: 'minor',       intervals: [0, 3, 8, 11, 14],  complexity: 4 },
+
+  // --- Extreme compound alterations (complexity 5) ---
+  { label: '7(#11,b9,b5)',  quality: 'major',    intervals: [0, 4, 6, 10, 13, 18],  complexity: 5 },
+  { label: '7(#11,#9,b5)',  quality: 'major',    intervals: [0, 4, 6, 10, 15, 18],  complexity: 5 },
+  { label: '7(#11,b9,#5)',  quality: 'major',    intervals: [0, 4, 8, 10, 13, 18],  complexity: 5 },
+  { label: '7(#11,#9,#5)',  quality: 'major',    intervals: [0, 4, 8, 10, 15, 18],  complexity: 5 },
+  { label: '9(#11,#5)',     quality: 'major',    intervals: [0, 4, 8, 10, 14, 18],  complexity: 5 },
+  { label: '13(b9,b5)',     quality: 'major',    intervals: [0, 4, 6, 10, 13, 21],  complexity: 5 },
+  { label: '13(b9,#5)',     quality: 'major',    intervals: [0, 4, 8, 10, 13, 21],  complexity: 5 },
+  { label: '13(#9,b5)',     quality: 'major',    intervals: [0, 4, 6, 10, 15, 21],  complexity: 5 },
+  { label: '13(#9,#5)',     quality: 'major',    intervals: [0, 4, 8, 10, 15, 21],  complexity: 5 },
+  { label: '13(#11,#5)',    quality: 'major',    intervals: [0, 4, 8, 10, 14, 18, 21], complexity: 5 },
+  { label: '13(#11,b9)',    quality: 'major',    intervals: [0, 4, 7, 10, 13, 18, 21], complexity: 5 },
+  { label: '13(#11,#9)',    quality: 'major',    intervals: [0, 4, 7, 10, 15, 18, 21], complexity: 5 },
+  { label: 'maj9(#11,#5)',  quality: 'major',    intervals: [0, 4, 8, 11, 14, 18],  complexity: 5 },
+  { label: 'maj13(#11,#5)', quality: 'major',    intervals: [0, 4, 8, 11, 14, 18, 21], complexity: 5 },
 ];
-
-/** Special multi-slot extensions */
-const MULTI_EXTENSIONS: Extension[] = [
-  { name: '6/9', intervals: [9, 14], requires7th: false, count: 2 },
-  { name: 'add9', intervals: [14], requires7th: false, count: 1 },
-  { name: 'add11', intervals: [17], requires7th: false, count: 1 },
-];
-
-// --- Chord label building ---
-
-function buildChordLabel(root: NoteName, quality: ChordQuality, extensionNames: string[], spelling: 'sharp' | 'flat'): string {
-  const rootStr = spellNote(root, spelling);
-
-  // Base quality suffix
-  let qualitySuffix = '';
-  switch (quality) {
-    case 'major': qualitySuffix = ''; break;
-    case 'minor': qualitySuffix = 'm'; break;
-    case 'diminished': qualitySuffix = 'dim'; break;
-    case 'augmented': qualitySuffix = 'aug'; break;
-  }
-
-  // If we have sus, it replaces the quality for major
-  const hasSus = extensionNames.some(n => n.startsWith('sus'));
-  if (hasSus && quality === 'major') {
-    qualitySuffix = '';
-  }
-
-  // Build extension string
-  // Special handling: if we have '7' and '9', label as '9' not '7,9'
-  let extStr = '';
-  const has7 = extensionNames.includes('7') || extensionNames.includes('maj7');
-  const hasMaj7 = extensionNames.includes('maj7');
-
-  // Filter out intermediate 7ths when higher extensions are present
-  const highExtNames = ['9', 'b9', '#9', '11', '#11', '13', 'b13'];
-  const highExts = extensionNames.filter(n => highExtNames.includes(n));
-
-  if (highExts.length > 0 && has7) {
-    // Use the highest extension as the main label
-    const highest = highExts[highExts.length - 1];
-    if (hasMaj7) {
-      extStr = `maj${highest}`;
-    } else {
-      extStr = highest;
-    }
-    // Add any modifiers (b9 alongside 13, etc.)
-    const others = highExts.slice(0, -1);
-    if (others.length > 0) {
-      extStr += `(${others.join(',')})`;
-    }
-  } else {
-    extStr = extensionNames.join('');
-  }
-
-  // Special cases
-  if (extensionNames.includes('5') && quality === 'major') {
-    return `${rootStr}5`;
-  }
-  if (extensionNames.includes('m7b5')) {
-    return `${rootStr}m7b5`;
-  }
-
-  return `${rootStr}${qualitySuffix}${extStr}`;
-}
 
 // --- Main chord generation ---
 
@@ -219,80 +245,21 @@ export function generateChord(partials: number, _accidentalMode: AccidentalMode,
   const roots = chordRootMode === 'simple' ? NATURAL_ROOTS : CHROMATIC;
   const root = randomFrom(roots);
 
-  // Pick quality
-  const qualities: ChordQuality[] = ['major', 'minor', 'diminished', 'augmented'];
-  const quality = randomFrom(qualities);
+  // Filter templates by complexity (partials setting = max complexity allowed)
+  const available = CHORD_TEMPLATES.filter(t => t.complexity <= partials);
+  const template = randomFrom(available);
 
-  // Start with base triad intervals
-  let intervals = [...BASE_TRIADS[quality]];
-  const extensionNames: string[] = [];
-  let has7th = false;
-
-  if (partials > 0) {
-    // Decide how many partials to actually use (1 to partials)
-    const numPartials = 1 + Math.floor(Math.random() * partials);
-    let slotsRemaining = numPartials;
-
-    // First, maybe pick a P1 extension (7th, sus, etc.)
-    const p1Pool = EXTENSIONS_P1[quality];
-    if (p1Pool.length > 0 && slotsRemaining > 0) {
-      const ext = randomFrom(p1Pool);
-      slotsRemaining -= ext.count;
-
-      if (ext.replaces3rd !== undefined) {
-        // Replace the 3rd (index 1) with the sus interval
-        intervals[1] = ext.replaces3rd;
-      }
-      if (ext.removesNotes) {
-        intervals = intervals.filter(i => !ext.removesNotes!.includes(i));
-      }
-      ext.intervals.forEach(i => {
-        if (!intervals.includes(i)) intervals.push(i);
-      });
-      extensionNames.push(ext.name);
-
-      // Track if we now have a 7th
-      has7th = [10, 11, 9].some(s => intervals.includes(s) && s >= 9);
-    }
-
-    // Then, if slots remain and partials >= 2, try higher extensions
-    if (slotsRemaining > 0 && partials >= 2) {
-      // Build available pool
-      const available = [
-        ...HIGHER_EXTENSIONS.filter(e => !e.requires7th || has7th),
-        ...MULTI_EXTENSIONS.filter(e => e.count <= slotsRemaining && (!e.requires7th || has7th)),
-      ];
-
-      // Pick extensions until slots run out
-      const used = new Set<string>();
-      while (slotsRemaining > 0 && available.length > 0) {
-        const candidates = available.filter(e => e.count <= slotsRemaining && !used.has(e.name));
-        if (candidates.length === 0) break;
-
-        const ext = randomFrom(candidates);
-        used.add(ext.name);
-        slotsRemaining -= ext.count;
-
-        ext.intervals.forEach(i => {
-          if (!intervals.includes(i)) intervals.push(i);
-        });
-        extensionNames.push(ext.name);
-      }
-    }
-  }
-
-  // Sort intervals ascending
-  intervals.sort((a, b) => a - b);
-
-  // Build dice from intervals
+  // Build intervals and dice
+  const intervals = [...template.intervals].sort((a, b) => a - b);
   const baseOctave = 4;
   const dice: ChordDieResult[] = intervals.map(semitones => {
     const { note, octave } = noteFromSemitones(root, semitones);
     return { note, octave: baseOctave + octave, landed: false };
   });
 
-  const spelling = rootSpellingMode(root, quality);
-  const label = buildChordLabel(root, quality, extensionNames, spelling);
+  const spelling = rootSpellingMode(root, template.quality);
+  const rootStr = spellNote(root, spelling);
+  const label = `${rootStr}${template.label}`;
 
   return {
     root,
@@ -327,6 +294,32 @@ export function applyInversion(chord: ChordGroupResult, level: number): ChordGro
     dice: newDice,
     inversionLevel: actualLevel,
     label: chord.label,
+  };
+}
+
+/** Flip a chord's spelling mode (sharp↔flat) and rebuild the label */
+export function respellChord(chord: ChordGroupResult): ChordGroupResult {
+  const wasRespelled = chord.respelled ?? false;
+  const newSpelling: 'sharp' | 'flat' = chord.spellingMode === 'sharp' ? 'flat' : 'sharp';
+  const willBeRespelled = !wasRespelled;
+
+  // Use enharmonic spelling for the label when respelling, standard when reverting
+  const oldRoot = wasRespelled
+    ? spellNoteEnharmonic(chord.root, chord.spellingMode)
+    : spellNote(chord.root, chord.spellingMode);
+  const newRoot = willBeRespelled
+    ? spellNoteEnharmonic(chord.root, newSpelling)
+    : spellNote(chord.root, newSpelling);
+
+  const newLabel = oldRoot !== newRoot
+    ? chord.label.replace(oldRoot, newRoot)
+    : chord.label;
+
+  return {
+    ...chord,
+    label: newLabel,
+    spellingMode: newSpelling,
+    respelled: willBeRespelled,
   };
 }
 

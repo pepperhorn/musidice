@@ -20,17 +20,17 @@ export default function App() {
   prevRollingRef.current = isRolling;
 
   return (
-    <div className="app-container w-full h-dvh overflow-hidden bg-gradient-to-b from-slate-50 to-slate-100 flex flex-col" style={{ fontFamily: "'Poppins', 'Noto Music', sans-serif" }}>
+    <div className="app-container app-bg w-full h-dvh overflow-hidden flex flex-col relative" style={{ fontFamily: "'Poppins', 'Noto Music', sans-serif" }}>
       <button
         onClick={roll}
         disabled={isRolling}
-        className={`app-title-btn text-center text-5xl font-[Knewave] pt-4 pb-2 cursor-pointer transition-all active:scale-95 disabled:cursor-default shrink-0 ${isRolling ? '' : nudgeRef.current}`}
+        className={`app-title-btn relative z-10 text-center text-5xl font-[Knewave] pt-4 pb-2 cursor-pointer transition-all duration-300 active:scale-95 disabled:cursor-default shrink-0 ${isRolling ? '' : nudgeRef.current}`}
         style={{ background: 'none', border: 'none' }}
       >
         {isRolling ? (
-          <span className="text-slate-300">RollaNote</span>
+          <span className="app-title-rolling text-slate-300 transition-colors duration-300">RollaNote</span>
         ) : (
-          <span className="text-emerald-500">Get Shakin'!</span>
+          <span className="app-title-ready text-emerald-500 drop-shadow-[0_2px_8px_rgba(16,185,129,0.3)] transition-all duration-300">Get Shakin'!</span>
         )}
       </button>
       <DiceArea />

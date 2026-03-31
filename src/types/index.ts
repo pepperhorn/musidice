@@ -32,4 +32,5 @@ export interface ChordGroupResult {
   dice: ChordDieResult[];
   inversionLevel: number;
   spellingMode: 'flat' | 'sharp';
+  respelled?: boolean;
 }

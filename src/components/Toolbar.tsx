@@ -23,6 +23,7 @@ export function Toolbar() {
   const setAccidentalMode = useDiceStore((s) => s.setAccidentalMode);
   const chordRootMode = useDiceStore((s) => s.chordRootMode);
   const setChordRootMode = useDiceStore((s) => s.setChordRootMode);
+  const respellChords = useDiceStore((s) => s.respellChords);
   const results = useDiceStore((s) => s.results);
   const chordResults = useDiceStore((s) => s.chordResults);
   const { shuffle, invert, isRolling } = useRollAnimation();
@@ -34,12 +35,12 @@ export function Toolbar() {
   const count = mode === 'chords' ? chordCount : pairCount;
   const setCount = mode === 'chords' ? setChordCount : setPairCount;
 
-  const btnBase = 'w-8 h-8 sm:w-10 sm:h-10 rounded-full text-xs sm:text-base font-semibold transition-all cursor-pointer disabled:cursor-not-allowed disabled:opacity-40 bg-slate-100 text-slate-600 hover:bg-slate-200 border border-slate-200';
-  const toggleBtn = 'px-3 py-1.5 sm:px-4 sm:py-2 rounded-full text-xs sm:text-base font-semibold transition-all cursor-pointer disabled:cursor-not-allowed border bg-emerald-500 text-white border-emerald-500 hover:bg-emerald-400';
-  const actionBtn = 'px-3 py-1.5 sm:px-4 sm:py-2 rounded-full text-xs sm:text-base font-semibold transition-all cursor-pointer disabled:cursor-not-allowed disabled:opacity-30 bg-slate-100 text-slate-600 hover:bg-slate-200 border border-slate-200 hover:text-slate-800';
-  const labelClass = 'text-slate-500 text-xs sm:text-base';
-  const valueClass = 'text-slate-700 text-xs sm:text-base font-semibold w-5 sm:w-7 text-center';
-  const sepClass = 'w-px h-5 sm:h-7 bg-slate-200';
+  const btnBase = 'w-8 h-8 sm:w-10 sm:h-10 rounded-full text-xs sm:text-base font-semibold transition-all duration-150 cursor-pointer disabled:cursor-not-allowed disabled:opacity-40 bg-white/70 text-slate-600 hover:bg-white hover:shadow-sm border border-slate-200/60 active:scale-95';
+  const toggleBtn = 'px-3 py-1.5 sm:px-4 sm:py-2 rounded-full text-xs sm:text-base font-semibold transition-all duration-150 cursor-pointer disabled:cursor-not-allowed border bg-emerald-500 text-white border-emerald-500 hover:bg-emerald-400 shadow-[0_2px_8px_rgba(16,185,129,0.25)] hover:shadow-[0_2px_12px_rgba(16,185,129,0.4)] active:scale-95';
+  const actionBtn = 'px-3 py-1.5 sm:px-4 sm:py-2 rounded-full text-xs sm:text-base font-semibold transition-all duration-150 cursor-pointer disabled:cursor-not-allowed disabled:opacity-30 bg-white/70 text-slate-600 hover:bg-white hover:shadow-sm border border-slate-200/60 hover:text-slate-800 active:scale-95';
+  const labelClass = 'text-slate-400 text-xs sm:text-sm font-medium tracking-wide uppercase';
+  const valueClass = 'text-slate-700 text-xs sm:text-base font-bold w-5 sm:w-7 text-center tabular-nums';
+  const sepClass = 'w-px h-5 sm:h-7 bg-slate-200/50';
 
   // Cycle accidental mode on click
   const cycleAccidental = () => {
@@ -58,7 +59,7 @@ export function Toolbar() {
   };
 
   return (
-    <div className="toolbar fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-sm border-t border-slate-200 px-2 sm:px-4 pt-2 sm:pt-3 pb-3 sm:pb-4 flex flex-wrap items-center justify-center gap-1.5 sm:gap-3 font-[Poppins] z-40">
+    <div className="toolbar toolbar-glass fixed bottom-0 left-0 right-0 px-3 sm:px-4 pt-2.5 sm:pt-3 pb-3 sm:pb-4 flex flex-wrap items-center justify-center gap-1.5 sm:gap-3 font-[Poppins] z-40">
       {/* Row 1: count, partials, accidental/root */}
       <div className="toolbar-row-settings flex items-center gap-1.5 sm:gap-3">
         {/* Count +/- */}
@@ -140,6 +141,18 @@ export function Toolbar() {
             className={`btn-invert ${actionBtn}`}
           >
             Inv
+          </button>
+        )}
+
+        {/* Respell sharps/flats (chords mode only) */}
+        {mode === 'chords' && (
+          <button
+            onClick={respellChords}
+            disabled={!hasChordResults || isRolling}
+            className={`btn-respell ${actionBtn}`}
+            title="Toggle sharp/flat spelling"
+          >
+            ♭/♯
           </button>
         )}
 

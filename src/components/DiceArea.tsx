@@ -133,7 +133,7 @@ export function DiceArea() {
       : '';
 
   return (
-    <div ref={areaRef} className="dice-area flex-1 flex flex-col items-center justify-center gap-2 pb-16 overflow-hidden">
+    <div ref={areaRef} className="dice-area relative z-10 flex-1 flex flex-col items-center justify-center gap-2 pb-16 overflow-hidden">
       {/* Dice grid */}
       <div
         key={`${mode}-${currentPage}`}
@@ -184,10 +184,10 @@ export function DiceArea() {
               <button
                 key={i}
                 onClick={() => goToPage(i)}
-                className={`pagination-item px-3 py-1.5 rounded-full text-sm font-semibold transition-all cursor-pointer border ${
+                className={`pagination-item px-3 py-1.5 rounded-full text-sm font-semibold transition-all duration-150 cursor-pointer border active:scale-95 ${
                   i === currentPage
-                    ? 'bg-emerald-500 text-white border-emerald-500'
-                    : 'bg-slate-100 text-slate-500 border-slate-200 hover:bg-slate-200'
+                    ? 'bg-emerald-500 text-white border-emerald-500 shadow-[0_2px_8px_rgba(16,185,129,0.3)]'
+                    : 'bg-white/70 text-slate-500 border-slate-200/60 hover:bg-white hover:shadow-sm'
                 }`}
               >
                 {label}

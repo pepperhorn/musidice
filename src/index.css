@@ -1,8 +1,66 @@
-@import url('https://fonts.googleapis.com/css2?family=Knewave&family=Noto+Music&family=Poppins:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Knewave&family=Noto+Music&family=Poppins:wght@400;500;600;700&family=Caveat:wght@600;700&display=swap');
 @import "tailwindcss";
+
+:root {
+  --accent: #10b981;
+  --accent-glow: rgba(16, 185, 129, 0.25);
+  --surface: #f8fafc;
+  --surface-warm: #fefce8;
+}
 
 body {
   margin: 0;
+  overflow: hidden;
+}
+
+/* --- Textured background --- */
+.app-bg {
+  background:
+    radial-gradient(ellipse 80% 60% at 50% 0%, var(--surface-warm) 0%, transparent 70%),
+    radial-gradient(ellipse 60% 50% at 80% 100%, rgba(16, 185, 129, 0.06) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 40% at 10% 80%, rgba(136, 167, 248, 0.06) 0%, transparent 60%),
+    linear-gradient(180deg, var(--surface) 0%, #f1f5f9 100%);
+}
+
+/* Subtle dot grid texture */
+.app-bg::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: radial-gradient(circle, #cbd5e1 0.5px, transparent 0.5px);
+  background-size: 24px 24px;
+  opacity: 0.18;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* --- Toolbar glass effect --- */
+.toolbar-glass {
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(16px) saturate(1.4);
+  -webkit-backdrop-filter: blur(16px) saturate(1.4);
+  border-top: 1px solid rgba(203, 213, 225, 0.5);
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.04);
+}
+
+/* --- Overlay entrance --- */
+@keyframes overlay-fade-up {
+  0% { opacity: 0; transform: translateY(20px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+.overlay-enter {
+  animation: overlay-fade-up 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.overlay-enter-delay-1 {
+  opacity: 0;
+  animation: overlay-fade-up 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.15s forwards;
+}
+
+.overlay-enter-delay-2 {
+  opacity: 0;
+  animation: overlay-fade-up 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.3s forwards;
 }
 
 

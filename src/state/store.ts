@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { respellChord } from '../constants/chords';
 import type { AccidentalMode, ChordGroupResult, ChordRootMode, DicePairResult, GameMode, RollingPhase } from '../types';
 
 interface DiceState {
@@ -28,6 +29,7 @@ interface DiceState {
   setChordResults: (r: ChordGroupResult[]) => void;
   setShuffling: (v: boolean) => void;
   shuffleResults: () => void;
+  respellChords: () => void;
 }
 
 export const useDiceStore = create<DiceState>((set) => ({
@@ -56,6 +58,9 @@ export const useDiceStore = create<DiceState>((set) => ({
   setResults: (r) => set({ results: r }),
   setChordResults: (r) => set({ chordResults: r }),
   setShuffling: (v) => set({ shuffling: v }),
+  respellChords: () => set((state) => ({
+    chordResults: state.chordResults.map(respellChord),
+  })),
   shuffleResults: () => set((state) => {
     const allDice = state.results.flatMap((r) => [r.die1, r.die2]);
     for (let i = allDice.length - 1; i > 0; i--) {
