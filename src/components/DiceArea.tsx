@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useDiceStore } from '../state/store';
 import { playArpeggio } from '../audio/engine';
 import { DicePair } from './DicePair';

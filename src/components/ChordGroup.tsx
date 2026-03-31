@@ -10,7 +10,7 @@ interface ChordGroupProps {
   compact?: boolean;
 }
 
-export function ChordGroup({ result, rollingPhase, groupIndex, compact = false }: ChordGroupProps) {
+export function ChordGroup({ result, rollingPhase, groupIndex: _groupIndex, compact = false }: ChordGroupProps) {
   const diceCount = result?.dice.length ?? 3;
   const settledCountRef = useRef(0);
   const allLanded = result?.dice.every((d) => d.landed) ?? false;

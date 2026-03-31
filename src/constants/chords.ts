@@ -214,7 +214,7 @@ function buildChordLabel(root: NoteName, quality: ChordQuality, extensionNames: 
 
 // --- Main chord generation ---
 
-export function generateChord(partials: number, accidentalMode: AccidentalMode, chordRootMode: ChordRootMode = 'all'): ChordGroupResult {
+export function generateChord(partials: number, _accidentalMode: AccidentalMode, chordRootMode: ChordRootMode = 'all'): ChordGroupResult {
   // Pick root — 'simple' uses only natural (white key) roots
   const roots = chordRootMode === 'simple' ? NATURAL_ROOTS : CHROMATIC;
   const root = randomFrom(roots);
