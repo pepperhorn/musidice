@@ -28,7 +28,7 @@ export default function App() {
         style={{ background: 'none', border: 'none' }}
       >
         {isRolling ? (
-          <span className="text-slate-300">Roll'd</span>
+          <span className="text-slate-300">RollaNote</span>
         ) : (
           <span className="text-emerald-500">Get Shakin'!</span>
         )}

@@ -4,7 +4,7 @@ import type { AccidentalMode } from '../types';
 
 const ACCIDENTAL_CYCLE: AccidentalMode[] = ['off', 'flat', 'natural', 'sharp'];
 const ACCIDENTAL_LABELS: Record<AccidentalMode, string> = {
-  off: '—',
+  off: '?',
   flat: '♭',
   natural: '♮',
   sharp: '♯',
@@ -58,105 +58,109 @@ export function Toolbar() {
   };
 
   return (
-    <div className="toolbar fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-sm border-t border-slate-200 px-2 sm:px-4 pt-2 sm:pt-3 pb-3 sm:pb-4 flex items-center justify-center gap-1.5 sm:gap-3 font-[Poppins] z-40">
-      {/* Count +/- */}
-      <div className="toolbar-count flex items-center gap-1 sm:gap-2">
-        <span className={`toolbar-count-label ${labelClass}`}>{mode === 'chords' ? 'Chords:' : 'Pairs:'}</span>
-        <button
-          onClick={() => setCount(Math.max(1, count - 1))}
-          disabled={isRolling || count <= 1}
-          className={`btn-count-minus ${btnBase}`}
-        >
-          &minus;
-        </button>
-        <span className={`toolbar-count-value ${valueClass}`}>{count}</span>
-        <button
-          onClick={() => setCount(count + 1)}
-          disabled={isRolling}
-          className={`btn-count-plus ${btnBase}`}
-        >
-          +
-        </button>
+    <div className="toolbar fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-sm border-t border-slate-200 px-2 sm:px-4 pt-2 sm:pt-3 pb-3 sm:pb-4 flex flex-wrap items-center justify-center gap-1.5 sm:gap-3 font-[Poppins] z-40">
+      {/* Row 1: count, partials, accidental/root */}
+      <div className="toolbar-row-settings flex items-center gap-1.5 sm:gap-3">
+        {/* Count +/- */}
+        <div className="toolbar-count flex items-center gap-1 sm:gap-2">
+          <span className={`toolbar-count-label ${labelClass}`}>{mode === 'chords' ? 'Chords:' : 'Pairs:'}</span>
+          <button
+            onClick={() => setCount(Math.max(1, count - 1))}
+            disabled={isRolling || count <= 1}
+            className={`btn-count-minus ${btnBase}`}
+          >
+            &minus;
+          </button>
+          <span className={`toolbar-count-value ${valueClass}`}>{count}</span>
+          <button
+            onClick={() => setCount(count + 1)}
+            disabled={isRolling}
+            className={`btn-count-plus ${btnBase}`}
+          >
+            +
+          </button>
+        </div>
+
+        {/* Partials (chords mode only) */}
+        {mode === 'chords' && (
+          <>
+            <div className={`toolbar-separator ${sepClass}`} />
+            <div className="toolbar-partials flex items-center gap-1 sm:gap-2">
+              <span className={`toolbar-partials-label ${labelClass}`}>Ext:</span>
+              <button
+                onClick={() => setPartials(partials - 1)}
+                disabled={isRolling || partials <= 0}
+                className={`btn-partials-minus ${btnBase}`}
+              >
+                &minus;
+              </button>
+              <span className={`toolbar-partials-value ${valueClass}`}>{partials}</span>
+              <button
+                onClick={() => setPartials(partials + 1)}
+                disabled={isRolling || partials >= 5}
+                className={`btn-partials-plus ${btnBase}`}
+              >
+                +
+              </button>
+            </div>
+          </>
+        )}
+
+        <div className={`toolbar-separator ${sepClass}`} />
+
+        {/* Accidental toggle (notes mode) / Root mode toggle (chords mode) */}
+        {mode === 'notes' ? (
+          <button
+            onClick={cycleAccidental}
+            disabled={isRolling}
+            className={`btn-accidental-toggle ${accidentalMode === 'off' ? actionBtn : toggleBtn}`}
+            title={`Accidental: ${accidentalMode}`}
+          >
+            {ACCIDENTAL_LABELS[accidentalMode]}
+          </button>
+        ) : (
+          <button
+            onClick={toggleChordRoot}
+            disabled={isRolling}
+            className={`btn-chord-root-toggle ${toggleBtn}`}
+            title={`Root mode: ${chordRootMode}`}
+          >
+            {chordRootMode === 'simple' ? 'Simple' : 'All'}
+          </button>
+        )}
       </div>
 
-      {/* Partials (chords mode only) */}
-      {mode === 'chords' && (
-        <>
-          <div className={`toolbar-separator ${sepClass}`} />
-          <div className="toolbar-partials flex items-center gap-1 sm:gap-2">
-            <span className={`toolbar-partials-label ${labelClass}`}>Ext:</span>
-            <button
-              onClick={() => setPartials(partials - 1)}
-              disabled={isRolling || partials <= 0}
-              className={`btn-partials-minus ${btnBase}`}
-            >
-              &minus;
-            </button>
-            <span className={`toolbar-partials-value ${valueClass}`}>{partials}</span>
-            <button
-              onClick={() => setPartials(partials + 1)}
-              disabled={isRolling || partials >= 5}
-              className={`btn-partials-plus ${btnBase}`}
-            >
-              +
-            </button>
-          </div>
-        </>
-      )}
+      {/* Row 2: actions */}
+      <div className="toolbar-row-actions flex items-center gap-1.5 sm:gap-3">
+        {/* Invert (chords mode only) */}
+        {mode === 'chords' && (
+          <button
+            onClick={invert}
+            disabled={!hasResults || isRolling}
+            className={`btn-invert ${actionBtn}`}
+          >
+            Inv
+          </button>
+        )}
 
-      <div className={`toolbar-separator ${sepClass}`} />
-
-      {/* Accidental toggle (notes mode) / Root mode toggle (chords mode) */}
-      {mode === 'notes' ? (
+        {/* Shuffle */}
         <button
-          onClick={cycleAccidental}
-          disabled={isRolling}
-          className={`btn-accidental-toggle ${toggleBtn}`}
-          title={`Accidental: ${accidentalMode}`}
-        >
-          {ACCIDENTAL_LABELS[accidentalMode]}
-        </button>
-      ) : (
-        <button
-          onClick={toggleChordRoot}
-          disabled={isRolling}
-          className={`btn-chord-root-toggle ${toggleBtn}`}
-          title={`Root mode: ${chordRootMode}`}
-        >
-          {chordRootMode === 'simple' ? 'Simple' : 'All'}
-        </button>
-      )}
-
-      <div className={`toolbar-separator ${sepClass}`} />
-
-      {/* Invert (chords mode only) */}
-      {mode === 'chords' && (
-        <button
-          onClick={invert}
+          onClick={shuffle}
           disabled={!hasResults || isRolling}
-          className={`btn-invert ${actionBtn}`}
+          className={`btn-shuffle ${actionBtn}`}
         >
-          Inv
+          Shuffle
         </button>
-      )}
 
-      {/* Shuffle */}
-      <button
-        onClick={shuffle}
-        disabled={!hasResults || isRolling}
-        className={`btn-shuffle ${actionBtn}`}
-      >
-        Shuffle
-      </button>
-
-      {/* Mode toggle — single button that cycles */}
-      <button
-        onClick={toggleMode}
-        disabled={isRolling}
-        className={`btn-mode-toggle ${toggleBtn}`}
-      >
-        {mode === 'notes' ? 'Notes' : 'Chords'}
-      </button>
+        {/* Mode toggle — single button that cycles */}
+        <button
+          onClick={toggleMode}
+          disabled={isRolling}
+          className={`btn-mode-toggle ${toggleBtn}`}
+        >
+          {mode === 'notes' ? 'Notes' : 'Chords'}
+        </button>
+      </div>
     </div>
   );
 }
